@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>主持人控制台 ｜ 人生大富翁</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F8F4EA;
+    --bg-card: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #5A5A5A;
+
+    --c-fitness:   #E74C3C;
+    --c-knowledge: #2E5BBA;
+    --c-bible:     #C9A0E8;
+    --c-friend:    #F4A261;
+    --c-team:      #2A7F62;
+    --c-chance:    #F7C5C5;
+    --c-fate:      #FFC857;
+
+    --accent-pink:  #F4B5C7;
+    --accent-coral: #E76F51;
+
+    --team-white:  #FFFFFF;
+    --team-blue:   #2E5BBA;
+    --team-yellow: #FFC857;
+    --team-red:    #E74C3C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    font-family: 'Noto Sans TC', 'Space Grotesk', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 16px;
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* ===== 左側 ===== */
+  .left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+    padding: 10px 16px;
+  }
+
+  .top-bar .title {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  .top-bar .right-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 2px solid var(--ink);
+    background: var(--bg);
+  }
+
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+  }
+  .sync-dot.connected {
+    background: var(--c-team);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .small-btn {
+    background: var(--bg);
+    border: 2px solid var(--ink);
+    padding: 6px 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.1s;
+  }
+  .small-btn:hover {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .small-btn.danger {
+    background: var(--c-fitness);
+    color: white;
+  }
+
+  /* 棋盤 */
+  .board-wrap {
+    display: flex;
+    justify-content: center;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 100%;
+    max-width: 720px;
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    position: relative;
+  }
+
+  .board-center {
+    grid-column: 2 / 8;
+    grid-row: 2 / 8;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 18px 14px;
+  }
+
+  .center-status-title {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 22px;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+  }
+
+  .center-log-box {
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+    padding: 12px 18px;
+    max-width: 92%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .center-log-label {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--bg);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 2px 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .center-log {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* 格子 */
+  .tile {
+    border: 2px solid var(--ink);
+    margin: -1px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+    transition: transform 0.15s;
+    background: var(--bg-card);
+  }
+  .tile:hover {
+    transform: scale(1.05);
+    z-index: 5;
+    box-shadow: 0 4px 0 var(--ink);
+  }
+
+  .tile-tag {
+    width: 100%;
+    padding: 3px 4px;
+    background: var(--ink);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(6px, 1.3vw, 7px);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+  .tile-tag .tile-price {
+    display: block;
+    font-size: clamp(7px, 1.5vw, 9px);
+    color: var(--c-fate);
+  }
+
+  .tile-visual {
+    flex-grow: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    font-size: clamp(16px, 3.5vw, 26px);
+    line-height: 1;
+  }
+
+  .tile.fitness   .tile-visual { background: var(--c-fitness); }
+  .tile.knowledge .tile-visual { background: var(--c-knowledge); }
+  .tile.bible     .tile-visual { background: var(--c-bible); }
+  .tile.friend    .tile-visual { background: var(--c-friend); }
+  .tile.team      .tile-visual { background: var(--c-team); }
+
+  .tile.chance .tile-visual,
+  .tile.fate .tile-visual {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tile.chance .tile-visual { background: var(--c-chance); }
+  .tile.fate   .tile-visual { background: var(--c-fate); }
+
+  .tile-bigmark {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(18px, 4vw, 28px);
+    color: var(--ink);
+    line-height: 1;
+  }
+
+  .tile-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(6px, 1.4vw, 8px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .tile.corner { border-width: 2.5px; }
+  .tile.corner .tile-visual {
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+  }
+  .tile.corner .corner-emoji {
+    font-size: clamp(20px, 4.5vw, 32px);
+  }
+  .tile.corner .corner-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(7px, 1.6vw, 10px);
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+  .tile.corner-start    .tile-visual { background: var(--c-fate); }
+  .tile.corner-vacation .tile-visual { background: var(--c-chance); }
+  .tile.corner-portal-a .tile-visual,
+  .tile.corner-portal-b .tile-visual {
+    background: linear-gradient(135deg, var(--c-bible) 0%, var(--accent-pink) 100%);
+  }
+
+  /* 擁有狀態 - 右上折角標 */
+  .tile.owned::after {
+    content: attr(data-owner-char);
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 22px;
+    height: 22px;
+    background: var(--owner-color);
+    border-left: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 2px 3px 0 0;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .tile.owned[data-owner-id="blue"]::after,
+  .tile.owned[data-owner-id="red"]::after {
+    color: white;
+  }
+
+  /* 棋子 */
+  .pieces-on-tile {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    display: flex;
+    gap: 3px;
+    z-index: 3;
+    flex-wrap: wrap;
+    max-width: 65%;
+  }
+  .piece-marker {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: 1.5px 1.5px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 10px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .piece-marker.team-white  {
+    background: var(--team-white);
+    box-shadow: 1.5px 1.5px 0 var(--ink), 0 0 0 3px rgba(255,255,255,0.55);
+  }
+  .piece-marker.team-blue   {
+    background: var(--team-blue);
+    color: white;
+    box-shadow: 1.5px 1.5px 0 var(--ink), 0 0 0 3px rgba(46,91,186,0.4);
+  }
+  .piece-marker.team-yellow {
+    background: var(--team-yellow);
+    box-shadow: 1.5px 1.5px 0 var(--ink), 0 0 0 3px rgba(255,200,87,0.55);
+  }
+  .piece-marker.team-red    {
+    background: var(--team-red);
+    color: white;
+    box-shadow: 1.5px 1.5px 0 var(--ink), 0 0 0 3px rgba(231,76,60,0.4);
+  }
+  .piece-marker.is-active {
+    animation: piece-bounce 1s ease-in-out infinite;
+    z-index: 4;
+  }
+  @keyframes piece-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .tip-card {
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+    padding: 10px 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .tip-card strong { color: var(--ink); font-weight: 700; }
+
+  /* ===== 右側 ===== */
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+
+  .panel {
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+  }
+
+  .panel-header {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 8px 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-body { padding: 12px; }
+
+  /* 隊伍區 */
+  .teams-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .team-card {
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    padding: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .team-card:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .team-card.active {
+    background: var(--c-fate);
+    transform: translate(-2px, -2px);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .team-card.active::before {
+    content: 'ACTIVE';
+    position: absolute;
+    top: -10px;
+    right: -2px;
+    background: var(--c-fitness);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 9px;
+    padding: 2px 6px;
+    border: 2px solid var(--ink);
+    letter-spacing: 1px;
+  }
+
+  .team-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .team-piece {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .team-piece.team-white  { background: var(--team-white); }
+  .team-piece.team-blue   { background: var(--team-blue); }
+  .team-piece.team-yellow { background: var(--team-yellow); }
+  .team-piece.team-red    { background: var(--team-red); }
+
+  .team-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    flex-grow: 1;
+    letter-spacing: 0.5px;
+  }
+
+  .team-score {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    margin-bottom: 2px;
+  }
+
+  .team-meta {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* 控制台 */
+  .current-turn {
+    text-align: center;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed var(--ink);
+  }
+
+  .current-turn-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+
+  .current-turn-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+
+  .dice-input-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .dice-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .dice-btn {
+    background: var(--bg);
+    border: 2px solid var(--ink);
+    padding: 8px 0;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 16px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .dice-btn:hover { background: var(--c-fate); }
+  .dice-btn.selected {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .move-btn {
+    width: 100%;
+    background: var(--c-knowledge);
+    color: white;
+    border: 2.5px solid var(--ink);
+    padding: 14px;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .move-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .move-btn:disabled {
+    background: var(--ink-soft);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .quick-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .quick-btn {
+    background: var(--bg);
+    border: 2px solid var(--ink);
+    padding: 8px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .quick-btn:hover {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* ===== Modal ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    max-width: 560px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    animation: pop 0.3s ease;
+  }
+  @keyframes pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 2.5px solid var(--ink);
+    position: relative;
+  }
+
+  .modal-tag {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    margin-bottom: 8px;
+    background: var(--bg);
+    text-transform: uppercase;
+  }
+
+  .modal h2 {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 24px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+
+  .modal .code {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    cursor: pointer;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 16px;
+  }
+  .modal-close:hover {
+    background: var(--c-fitness);
+    color: white;
+  }
+
+  .modal-body { padding: 18px 22px 24px; font-size: 15px; }
+
+  .status-banner {
+    background: var(--c-fate);
+    border: 2.5px solid var(--ink);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+  }
+  .status-banner.owned { background: var(--accent-pink); }
+  .status-banner .team-tag {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    vertical-align: middle;
+    margin: 0 4px;
+  }
+
+  .price-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 14px;
+    border: 2.5px solid var(--ink);
+  }
+  .price-item {
+    padding: 12px;
+    text-align: center;
+    border-right: 2.5px solid var(--ink);
+  }
+  .price-item:last-child { border-right: none; }
+  .price-item:nth-child(1) { background: var(--c-fitness); color: white; }
+  .price-item:nth-child(2) { background: var(--c-fate); color: var(--ink); }
+
+  .price-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.85;
+  }
+  .price-value {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .price-value .unit {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    margin-left: 3px;
+    opacity: 0.85;
+  }
+
+  .rules-block {
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    line-height: 1.8;
+    font-size: 14px;
+    white-space: pre-line;
+  }
+  .rules-label {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 3px 10px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  /* 行動按鈕 */
+  .action-buttons {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .action-btn {
+    border: 2.5px solid var(--ink);
+    padding: 14px 16px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.1s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-card);
+  }
+  .action-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .action-btn.success { background: var(--c-team); color: white; }
+  .action-btn.fail    { background: var(--c-fitness); color: white; }
+  .action-btn.pay     { background: var(--c-friend); }
+  .action-btn.challenge { background: var(--c-bible); }
+  .action-btn.skip { background: var(--bg); color: var(--ink-soft); }
+
+  .action-btn .ico {
+    font-size: 22px;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .action-btn.success .ico,
+  .action-btn.fail .ico,
+  .action-btn.pay .ico,
+  .action-btn.challenge .ico {
+    color: var(--ink);
+  }
+
+  .action-btn .desc { flex-grow: 1; }
+  .action-btn .desc small {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 2px;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+  }
+
+  /* 卡片抽取 */
+  .card-draw {
+    border: 3px solid var(--ink);
+    padding: 22px 18px;
+    text-align: center;
+    margin-bottom: 14px;
+    animation: card-flip 0.5s ease;
+  }
+  @keyframes card-flip {
+    0% { transform: rotateY(90deg) scale(0.7); opacity: 0; }
+    100% { transform: rotateY(0) scale(1); opacity: 1; }
+  }
+  .card-draw.chance { background: var(--c-chance); }
+  .card-draw.fate { background: var(--c-fate); }
+
+  .card-type-tag {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    display: inline-block;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    background: var(--bg-card);
+    margin-bottom: 12px;
+  }
+  .card-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+  }
+  .card-effect {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    background: var(--c-fate);
+    border: 3px solid var(--ink);
+    padding: 16px 28px;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 22px;
+    box-shadow: 5px 5px 0 var(--ink);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+  }
+
+  /* 窄螢幕 */
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    .right-col {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <div class="left-col">
+    <div class="top-bar">
+      <span class="title">🎮 主持人控制台</span>
+      <div class="right-btns">
+        <span class="sync-badge">
+          <span class="sync-dot" id="syncDot"></span>
+          <span id="syncText">未連接觀眾頁</span>
+        </span>
+        <a href="watch.html" target="_blank" class="small-btn">📺 觀眾頁</a>
+        <a href="index.html" class="small-btn">📖 規則</a>
+        <button class="small-btn danger" onclick="confirmReset()">🔄</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <div class="board-center">
+          <div class="center-status-title">GAME IN PROGRESS</div>
+          <div class="center-log-box">
+            <span class="center-log-label">LATEST</span>
+            <div class="center-log" id="centerLog">遊戲開始！白隊先擲骰子</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-card">
+      💡 <strong>提示：</strong>點任一格可隨時查看規則（不影響遊戲）｜點隊伍卡片可調整積分／查看詳細狀態
+    </div>
+  </div>
+
+  <!-- 右側控制 -->
+  <div class="right-col">
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>#TEAMS</span>
+        <span>狀態</span>
+      </div>
+      <div class="panel-body">
+        <div class="teams-grid" id="teamsGrid"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>#CONTROL</span>
+        <span>行動控制</span>
+      </div>
+      <div class="panel-body">
+        <div class="current-turn">
+          <div class="current-turn-label">CURRENT TURN</div>
+          <div class="current-turn-name" id="currentTeamName">⚪ 白隊</div>
+        </div>
+
+        <div class="dice-input-label">🎲 骰子點數（前進步數）</div>
+        <div class="dice-grid" id="diceGrid"></div>
+
+        <button class="move-btn" id="moveBtn" onclick="executeMove()">
+          🚶 前進
+        </button>
+
+        <div class="quick-actions">
+          <button class="quick-btn" onclick="showRanking()">🏆 排名</button>
+          <button class="quick-btn" onclick="skipCurrentTurn()">⏭️ 跳過</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast">經過出發！+100</div>
+
+<div class="modal-backdrop" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-header">
+      <span class="modal-tag" id="m-tag">主題</span>
+      <h2 id="m-name">遊戲名稱</h2>
+      <div class="code" id="m-code"></div>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 資料 ===== */
+const TILES = [
+  { kind: 'corner', sub: 'start', emoji: '🚀', name: '出發', desc: '經過：得 100 積分\n踩到：得 150 積分' },
+  { kind: 'fitness',   code: 'B1', name: '高角帽搬家', price: 140, emoji: '🎩', tag: 'FITNESS',
+    rules: '全員戴上生日尖角帽，視線會被帽簷壓低、變成很小的範圍。在這狀態下，全組要把指定物體搬運／放置到指定位置。\n搬運途中不能用手扶帽子、不能掀帽子。' },
+  { kind: 'knowledge', code: 'K1', name: '注音造詞', price: 100, emoji: '🔤', tag: 'KNOWLEDGE',
+    rules: '隨機抽出兩個注音符號（聲母／母音皆可），全組要在時限內一次成功且不重複地說出可以使用這兩個注音的字或詞。' },
+  { kind: 'chance', code: 'CH1', name: '機會', mark: '?', tag: 'CHANCE' },
+  { kind: 'bible',     code: 'S1', name: '保羅基本關', price: 120, emoji: '📜', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 保羅原本的名字？（掃羅）\n2. 在哪條路上遇見耶穌？（大馬士革路）\n3. 保羅的職業？（製造帳篷）\n4. 提摩太是保羅的什麼人？（屬靈兒子／門徒）\n5. 保羅完成了幾次宣教旅行？（三次）' },
+  { kind: 'friend',    code: 'F1', name: '壽星點名', price: 80, emoji: '🎂', tag: 'FRIEND',
+    rules: '主持人指定一個月份，全組要在時限內講出該月份所有壽星的名字。\n例：「6月的壽星有哪些？」\n漏一人即失敗。' },
+  { kind: 'team',      code: 'T1', name: '默契比手勢', price: 140, emoji: '✋', tag: 'TEAM',
+    rules: '全組集體聽口令，主持人喊出一個指定動作或圖形（如「愛心」、「比讚」、「OK」），全組要在3秒內同時比出一樣的姿勢。\n所有人一致才算成功。' },
+  { kind: 'corner', sub: 'portal-a', emoji: '🔀', name: '傳送 A', desc: '直接傳送到傳送點 B' },
+  { kind: 'knowledge', code: 'K2', name: '蘋果半邊唸字卡', price: 120, emoji: '🍎', tag: 'KNOWLEDGE',
+    rules: '依順序翻開題字卡，按圖示指定的「位置」唸出該字。\n例：圖片是「右半邊的蘋果」→ 唸「果」；左半邊 → 唸「蘋」。\n中途唸錯或停頓過久即失敗。' },
+  { kind: 'fitness',   code: 'B2', name: '口令舞蹈', price: 160, emoji: '💃', tag: 'FITNESS',
+    rules: '全組接受主持人連續下達的「口令＋動作」指令（例：右手舉、左腳跨、轉一圈），要連續成功完成三次完整指令組合。\n中間有人做錯或不同步即重新計算。' },
+  { kind: 'fate', code: 'FA1', name: '命運', mark: '!', tag: 'FATE' },
+  { kind: 'bible',     code: 'S2', name: '保羅書信關', price: 140, emoji: '✉️', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 「愛是恆久忍耐」出自？（哥林多前書）\n2. 「靠著那加給我力量的，凡事都能做」出自？（腓立比書4:13）\n3. 「不要效法這個世界」出自羅馬書第幾章？（第12章）\n4. 腓立比書的主題情感？（喜樂）\n5. 保羅在哪裡寫了腓立比書？（監獄）' },
+  { kind: 'friend',    code: 'F2', name: '新人關係連連看', price: 100, emoji: '🔗', tag: 'FRIEND',
+    rules: '主持人指定兩位新酒人或團契之友，全組要說出他們之間的關係。\n例：「亭雅跟柔柔是什麼關係？」\n答錯或答不出來即失敗。' },
+  { kind: 'team',      code: 'T2', name: '接龍造句', price: 160, emoji: '🐉', tag: 'TEAM',
+    rules: '主持人給出一個起始句，全組依順序每人加「一個字」，每加一字後句子都必須是有意義的中文句子。' },
+  { kind: 'corner', sub: 'vacation', emoji: '🏖️', name: '度假', desc: '停留一回合不能行動\n下回合開始前得 50 積分' },
+  { kind: 'fitness',   code: 'B3', name: '集體跑起來', price: 180, emoji: '🏃', tag: 'FITNESS',
+    rules: '全組同時起跑（原地高抬腿或繞圈），時間30秒。\n全組計步器（或手機計步）總和必須超過 X 步才算成功。' },
+  { kind: 'chance', code: 'CH2', name: '機會', mark: '?', tag: 'CHANCE' },
+  { kind: 'knowledge', code: 'K3', name: '手寫國字題', price: 140, emoji: '✏️', tag: 'KNOWLEDGE',
+    rules: '主持人從聖經中選出「偏難或冷門」的中文字（如：祭、贖、僕、屬、誡、衪…），全組要在白板或紙上正確手寫那個字。\n錯字、缺筆、寫成注音／同音字皆失敗。' },
+  { kind: 'bible',     code: 'S3', name: '信仰基礎關', price: 160, emoji: '⛪', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 十誡的第一誡？（除我以外，你不可有別的神）\n2. 耶穌最後的晚餐是什麼節期？（逾越節）\n3. 聖靈的果子有幾樣？（九樣）\n4. 主禱文的開頭？（我們在天上的父）\n5. 復活節紀念的是什麼？（耶穌從死裡復活）' },
+  { kind: 'friend',    code: 'F3', name: '小組事工小百科', price: 120, emoji: '📚', tag: 'FRIEND',
+    rules: '回答關於小組／團契本年度活動或主題的問題。\n例：「今年辦過幾次同工會？」、「上一季的查經主題是什麼？」\n答錯即失敗。' },
+  { kind: 'team',      code: 'T3', name: '無聲指揮官', price: 180, emoji: '🤫', tag: 'TEAM',
+    rules: '全組分配三種角色：\n• 指導員（1人）：知道目標動作或造型，但只能比手畫腳，不能出聲。\n• 翻譯官（1人）：唯一可以說話的人，負責把指導員的手勢翻譯成口語指令。\n• 擺動作組（其餘人）：依翻譯官的口語指令完成動作。\n全程除了翻譯官之外，所有人都不能發出任何聲音。' },
+  { kind: 'corner', sub: 'portal-b', emoji: '🔀', name: '傳送 B', desc: '直接傳送到傳送點 A' },
+  { kind: 'fate', code: 'FA2', name: '命運', mark: '!', tag: 'FATE' },
+  { kind: 'bible',     code: 'S4', name: '查經應用關', price: 180, emoji: '📖', tag: 'BIBLE',
+    rules: '此格為開放式，言之有理即算過關。\n\n例題：\n1. 保羅說「我靠主大大地喜樂」，他當時的處境如何？\n2. 羅馬書8章說我們是神的什麼？\n3. 哥林多前書13章除了講愛，還帶出什麼提醒？\n4. 你查過的保羅書信中，哪一節對你最有印象？\n5. 保羅的生命給你什麼激勵？' },
+  { kind: 'friend',    code: 'F4', name: '三位組員大解析', price: 140, emoji: '🔍', tag: 'FRIEND',
+    rules: '主持人隨機抽出三位組員（可跨組），全組要說出這三位的「職業」與「興趣」。\n答錯一項即失敗。' },
+  { kind: 'fitness',   code: 'B4', name: '人體猜拳', price: 200, emoji: '✊', tag: 'FITNESS',
+    rules: '全員用身體仿作「剪刀、石頭、布」的造型，跟主持人猜拳。\n直到全員「各贏兩次」才算過關。' },
+  { kind: 'team',      code: 'T4', name: '聖靈ㄉ風', price: 200, emoji: '🌬️', tag: 'TEAM',
+    rules: '每位組員身邊都有「聖靈」陪伴——以一張衛生紙代表。\n全組要想辦法讓自己的衛生紙不掉到地上，維持 30 秒。' },
+  { kind: 'knowledge', code: 'K4', name: '誰是時間管理者', price: 160, emoji: '⏰', tag: 'KNOWLEDGE',
+    rules: '主持人隨機說出一個秒數（例：「23 秒」），喊「開始」後全組需估算時間，並在自認為時間到的瞬間大喊「停！」。\n停在指定秒數的 ±5 秒內算成功。' },
+];
+
+const CHANCE_CARDS = [
+  { name: '神來一筆', desc: '獲得 150 積分。這是你意外的祝福！', effect: 'gain', value: 150 },
+  { name: '捷徑', desc: '可以選擇傳送到棋盤上任意一格，不須執行該格挑戰。', effect: 'teleport_choose' },
+  { name: '免費置產', desc: '選擇棋盤上任意一塊無主的地，免費取得。', effect: 'free_property' },
+  { name: '談判高手', desc: '可以強制要求任何一組出售一塊地給你，對方必須賣，價格為買入價。', effect: 'force_buy' },
+  { name: '跳過風險', desc: '本回合結束後，下一次踩到別人的地免付過路費。', effect: 'skip_toll' },
+  { name: '雙倍奉獻', desc: '選擇一塊你擁有的地，該地過路費本局翻倍。', effect: 'double_toll' },
+];
+
+const FATE_CARDS = [
+  { name: '人生不如意', desc: '失去 120 積分。', effect: 'lose', value: 120 },
+  { name: '退後三格', desc: '棋子退後 3 格，並執行該格效果。', effect: 'back_3' },
+  { name: '度假去', desc: '直接移動到度假格，停留一回合。', effect: 'goto_vacation' },
+  { name: '強制拍賣', desc: '必須將手上一塊地以半價賣回銀行，由自己選擇哪塊。', effect: 'force_sell' },
+  { name: '過路費加倍', desc: '本回合結束後，下一次踩到別人的地過路費加倍。', effect: 'next_toll_double' },
+  { name: '全員徵稅', desc: '你需要付給其他每一組各 30 積分。', effect: 'tax_all', value: 30 },
+];
+
+const TEAMS = [
+  { id: 'white',  name: '白隊', emoji: '⚪', color: 'team-white',  hex: '#FFFFFF' },
+  { id: 'blue',   name: '藍隊', emoji: '🔵', color: 'team-blue',   hex: '#2E5BBA' },
+  { id: 'yellow', name: '黃隊', emoji: '🟡', color: 'team-yellow', hex: '#FFC857' },
+  { id: 'red',    name: '紅隊', emoji: '🔴', color: 'team-red',    hex: '#E74C3C' },
+];
+
+const KIND_LABEL = {
+  fitness: '#FITNESS', knowledge: '#KNOWLEDGE', bible: '#BIBLE',
+  friend: '#FRIEND', team: '#TEAM',
+  chance: '#CHANCE', fate: '#FATE', corner: '#CORNER',
+};
+
+function feeFor(price) {
+  if (price <= 100) return 40;
+  if (price <= 140) return 60;
+  if (price <= 180) return 80;
+  return 100;
+}
+
+/* ===== 狀態 ===== */
+const STORAGE_KEY = 'monopoly_v5_state';
+const CHANNEL_NAME = 'monopoly_v5_sync';
+
+let state = {
+  teams: TEAMS.map(t => ({
+    id: t.id, name: t.name, emoji: t.emoji, color: t.color, hex: t.hex,
+    score: 900, pos: 0, properties: [],
+    skipNextRent: false, nextRentDouble: false, skipTurn: false,
+  })),
+  currentTeamIdx: 0,
+  selectedDice: null,
+  log: '遊戲開始！白隊先擲骰子',
+};
+
+const channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL_NAME) : null;
+let watchOpened = false;
+let watchCheckTimer = null;
+
+/* 等待觀眾頁抽牌時，暫存抽牌資訊 */
+let pendingCardDraw = null; // { kind, tileIdx }
+
+/* 廣播事件給觀眾頁（不影響 state） */
+function broadcast(msg) {
+  if (channel) {
+    try { channel.postMessage(msg); } catch (e) {}
+  }
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.teams && parsed.teams.length === 4) {
+        state = parsed;
+      }
+    }
+  } catch (e) {}
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (channel) channel.postMessage({ type: 'state', state });
+  } catch (e) {}
+}
+
+function resetGame() {
+  state = {
+    teams: TEAMS.map(t => ({
+      id: t.id, name: t.name, emoji: t.emoji, color: t.color, hex: t.hex,
+      score: 900, pos: 0, properties: [],
+      skipNextRent: false, nextRentDouble: false, skipTurn: false,
+    })),
+    currentTeamIdx: 0, selectedDice: null,
+    log: '遊戲重新開始！白隊先擲骰子',
+  };
+  saveState();
+  renderAll();
+}
+
+function confirmReset() {
+  if (confirm('確定要重置遊戲嗎？所有積分與位置會回到初始狀態！')) {
+    resetGame();
+  }
+}
+
+/* ===== Grid 位置 ===== */
+function getGridPos(idx) {
+  if (idx === 0) return { col: 1, row: 8 };
+  if (idx >= 1 && idx <= 6) return { col: 1 + idx, row: 8 };
+  if (idx === 7) return { col: 8, row: 8 };
+  if (idx >= 8 && idx <= 13) return { col: 8, row: 8 - (idx - 7) };
+  if (idx === 14) return { col: 8, row: 1 };
+  if (idx >= 15 && idx <= 20) return { col: 8 - (idx - 14), row: 1 };
+  if (idx === 21) return { col: 1, row: 1 };
+  if (idx >= 22 && idx <= 27) return { col: 1, row: 1 + (idx - 21) };
+  return { col: 1, row: 1 };
+}
+
+function findOwner(tileIdx) {
+  for (const team of state.teams) {
+    if (team.properties.includes(tileIdx)) return team;
+  }
+  return null;
+}
+
+/* ===== 渲染 ===== */
+const board = document.getElementById('board');
+
+function renderBoard() {
+  Array.from(board.querySelectorAll('.tile')).forEach(el => el.remove());
+
+  TILES.forEach((t, idx) => {
+    const el = document.createElement('div');
+    el.className = `tile ${t.kind}` + (t.sub ? ` corner-${t.sub}` : '');
+    const pos = getGridPos(idx);
+    el.style.gridColumn = pos.col;
+    el.style.gridRow = pos.row;
+
+    const owner = findOwner(idx);
+    if (owner) {
+      el.classList.add('owned');
+      el.style.setProperty('--owner-color', owner.hex);
+      const labelMap = { white: '白', blue: '藍', yellow: '黃', red: '紅' };
+      el.dataset.ownerChar = labelMap[owner.id] || '';
+      el.dataset.ownerId = owner.id;
+    }
+
+    if (t.kind === 'corner') {
+      el.innerHTML = `
+        <div class="tile-visual">
+          <div class="corner-emoji">${t.emoji}</div>
+          <div class="corner-name">${t.name}</div>
+        </div>
+      `;
+    } else if (t.kind === 'chance' || t.kind === 'fate') {
+      el.innerHTML = `
+        <div class="tile-visual">
+          <div class="tile-bigmark">${t.mark}</div>
+          <div class="tile-label">${t.kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="tile-tag">
+          #${t.tag}
+          <span class="tile-price">$${t.price}</span>
+        </div>
+        <div class="tile-visual">${t.emoji}</div>
+      `;
+    }
+
+    const teamsHere = state.teams.filter(team => team.pos === idx);
+    if (teamsHere.length > 0) {
+      const piecesEl = document.createElement('div');
+      piecesEl.className = 'pieces-on-tile';
+      teamsHere.forEach(team => {
+        const p = document.createElement('span');
+        const isActive = (team.id === state.teams[state.currentTeamIdx].id);
+        p.className = `piece-marker ${team.color}` + (isActive ? ' is-active' : '');
+        const labelMap = { white: '白', blue: '藍', yellow: '黃', red: '紅' };
+        p.textContent = labelMap[team.id] || '';
+        p.title = team.name;
+        piecesEl.appendChild(p);
+      });
+      el.appendChild(piecesEl);
+    }
+
+    el.addEventListener('click', () => showTileInfo(idx, false));
+    board.appendChild(el);
+  });
+}
+
+function renderTeams() {
+  const grid = document.getElementById('teamsGrid');
+  grid.innerHTML = '';
+  state.teams.forEach((team, idx) => {
+    const card = document.createElement('div');
+    card.className = 'team-card' + (idx === state.currentTeamIdx ? ' active' : '');
+    card.innerHTML = `
+      <div class="team-header">
+        <div class="team-piece ${team.color}"></div>
+        <div class="team-name">${team.name}</div>
+      </div>
+      <div class="team-score">${team.score}</div>
+      <div class="team-meta">🏠 ${team.properties.length} ／ 📍 ${TILES[team.pos].name}</div>
+    `;
+    card.addEventListener('click', () => showTeamDetail(idx));
+    grid.appendChild(card);
+  });
+}
+
+function renderControl() {
+  const team = state.teams[state.currentTeamIdx];
+  document.getElementById('currentTeamName').textContent = `${team.emoji} ${team.name}`;
+
+  const grid = document.getElementById('diceGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 12; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'dice-btn' + (state.selectedDice === i ? ' selected' : '');
+    btn.textContent = i;
+    btn.onclick = () => {
+      state.selectedDice = i;
+      renderControl();
+    };
+    grid.appendChild(btn);
+  }
+
+  const moveBtn = document.getElementById('moveBtn');
+  if (state.selectedDice) {
+    moveBtn.disabled = false;
+    moveBtn.textContent = `🚶 ${team.name} 前進 ${state.selectedDice} 步`;
+  } else {
+    moveBtn.disabled = true;
+    moveBtn.textContent = '👆 請先選擇骰子點數';
+  }
+
+  document.getElementById('centerLog').textContent = state.log;
+}
+
+function renderAll() {
+  renderBoard();
+  renderTeams();
+  renderControl();
+}
+
+/* ===== 移動邏輯 ===== */
+function executeMove() {
+  if (!state.selectedDice) return;
+  const team = state.teams[state.currentTeamIdx];
+
+  if (team.skipTurn) {
+    team.skipTurn = false;
+    team.score += 50;
+    state.log = `${team.name} 度假結束，獲得 50 積分後出發`;
+    state.selectedDice = null;
+    nextTurn();
+    saveState();
+    renderAll();
+    return;
+  }
+
+  const steps = state.selectedDice;
+  const oldPos = team.pos;
+  let newPos = (oldPos + steps) % 28;
+
+  if (oldPos + steps >= 28) {
+    team.score += 100;
+    showToast('🎉 經過出發！+100');
+  }
+
+  team.pos = newPos;
+  state.selectedDice = null;
+  saveState();
+  renderAll();
+
+  setTimeout(() => handleTileLanding(newPos), 400);
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function nextTurn() {
+  state.currentTeamIdx = (state.currentTeamIdx + 1) % 4;
+}
+
+function skipCurrentTurn() {
+  if (!confirm(`確定跳過 ${state.teams[state.currentTeamIdx].name} 此回合？`)) return;
+  state.log = `${state.teams[state.currentTeamIdx].name} 跳過此回合`;
+  state.selectedDice = null;
+  nextTurn();
+  saveState();
+  renderAll();
+}
+
+/* ===== 格子事件 ===== */
+function handleTileLanding(idx) {
+  const tile = TILES[idx];
+  const team = state.teams[state.currentTeamIdx];
+
+  if (tile.kind === 'corner') {
+    if (tile.sub === 'start') {
+      team.score += 150;
+      state.log = `${team.name} 踩到出發！+150 積分`;
+      saveState();
+      renderAll();
+      setTimeout(() => { nextTurn(); saveState(); renderAll(); }, 500);
+      return;
+    }
+    if (tile.sub === 'vacation') {
+      team.skipTurn = true;
+      state.log = `${team.name} 度假去！下回合休息`;
+      saveState();
+      renderAll();
+      setTimeout(() => { nextTurn(); saveState(); renderAll(); }, 500);
+      return;
+    }
+    if (tile.sub === 'portal-a' || tile.sub === 'portal-b') {
+      const targetIdx = tile.sub === 'portal-a' ? 22 : 8;
+      team.pos = targetIdx;
+      state.log = `${team.name} 使用傳送點，跳到 ${TILES[targetIdx].name}`;
+      saveState();
+      renderAll();
+      setTimeout(() => handleTileLanding(targetIdx), 600);
+      return;
+    }
+  }
+
+  if (tile.kind === 'chance' || tile.kind === 'fate') {
+    const deck = tile.kind === 'chance' ? CHANCE_CARDS : FATE_CARDS;
+    // 觀眾頁有連線：讓觀眾點擊抽牌；否則主持人自己抽
+    if (watchOpened) {
+      const cardIndex = Math.floor(Math.random() * deck.length);
+      pendingCardDraw = { kind: tile.kind, tileIdx: idx, cardIndex };
+      state.log = `${team.name} 踩到${tile.kind === 'chance' ? '機會' : '命運'}格 — 等待現場抽牌 ...`;
+      saveState();
+      renderAll();
+      broadcast({ type: 'card-draw-prompt', kind: tile.kind, tileIdx: idx });
+      showWaitingForDraw(tile.kind);
+    } else {
+      const card = deck[Math.floor(Math.random() * deck.length)];
+      showCardModal(idx, card, tile.kind);
+    }
+    return;
+  }
+
+  broadcast({ type: 'show-rule', tileIdx: idx, isLanding: true });
+  showTileInfo(idx, true);
+}
+
+/* ===== Modal: 顯示格子 ===== */
+function showTileInfo(idx, isLanding) {
+  const tile = TILES[idx];
+  const team = state.teams[state.currentTeamIdx];
+  const owner = findOwner(idx);
+
+  const modal = document.getElementById('modal');
+  const modalContent = document.getElementById('modalContent');
+  modalContent.scrollTop = 0;
+
+  document.getElementById('m-tag').textContent = KIND_LABEL[tile.kind] || '';
+  document.getElementById('m-name').textContent = tile.name;
+  document.getElementById('m-code').textContent = tile.code ? `CODE / ${tile.code}` : '★ SPECIAL ★';
+
+  let html = '';
+
+  if (tile.kind === 'corner') {
+    html += `<div class="rules-block"><div class="rules-label">EFFECT</div>${tile.desc}</div>`;
+    document.getElementById('m-body').innerHTML = html;
+    modal.classList.add('show');
+    return;
+  }
+
+  if (tile.kind === 'chance' || tile.kind === 'fate') {
+    html += `<div class="rules-block"><div class="rules-label">RULE</div>踩到此格會抽一張${tile.kind === 'chance' ? '機會' : '命運'}卡。</div>`;
+    document.getElementById('m-body').innerHTML = html;
+    modal.classList.add('show');
+    return;
+  }
+
+  if (isLanding) {
+    if (owner) {
+      if (owner.id === team.id) {
+        html += `<div class="status-banner">😎 這是 ${team.name} 自己的地，安全通過</div>`;
+      } else {
+        const baseFee = feeFor(tile.price);
+        const fee = team.skipNextRent ? 0 : (owner.nextRentDouble ? baseFee * 2 : baseFee);
+        const note = team.skipNextRent ? '（有「跳過風險」效果，免付）' : '';
+        html += `<div class="status-banner owned">
+          ⚠️ 這是 <span class="team-tag" style="background:${owner.hex}"></span>${owner.name} 的地<br>
+          過路費：${fee} 積分 ${note}
+        </div>`;
+      }
+    } else {
+      html += `<div class="status-banner">🆕 這是無主的地！可以挑戰購買</div>`;
+    }
+  }
+
+  html += `
+    <div class="price-card">
+      <div class="price-item">
+        <div class="price-label">買入價</div>
+        <div class="price-value">${tile.price}<span class="unit">分</span></div>
+      </div>
+      <div class="price-item">
+        <div class="price-label">過路費</div>
+        <div class="price-value">${feeFor(tile.price)}<span class="unit">分</span></div>
+      </div>
+    </div>
+    <div class="rules-block"><div class="rules-label">CHALLENGE</div>${tile.rules}</div>
+  `;
+
+  if (isLanding) {
+    html += `<div class="action-buttons">`;
+
+    if (!owner) {
+      html += `
+        <button class="action-btn success" onclick="actionBuyLand(${idx})">
+          <span class="ico">✓</span>
+          <div class="desc">挑戰成功 — 買下此地<br><small>支付 ${tile.price} 積分取得地產</small></div>
+        </button>
+        <button class="action-btn fail" onclick="actionFailChallenge()">
+          <span class="ico">✕</span>
+          <div class="desc">挑戰失敗<br><small>不買地，換下一組</small></div>
+        </button>
+        <button class="action-btn skip" onclick="actionSkip()">
+          <span class="ico">⏭</span>
+          <div class="desc">跳過挑戰<br><small>不買地，直接結束回合</small></div>
+        </button>
+      `;
+    } else if (owner.id === team.id) {
+      html += `
+        <button class="action-btn skip" onclick="actionSkip()">
+          <span class="ico">→</span>
+          <div class="desc">確認 — 換下一組<br><small>這是你自己的地</small></div>
+        </button>
+      `;
+    } else {
+      const baseFee = feeFor(tile.price);
+      const actualFee = team.skipNextRent ? 0 : (owner.nextRentDouble ? baseFee * 2 : baseFee);
+      html += `
+        <button class="action-btn pay" onclick="actionPayRent(${idx}, ${actualFee})">
+          <span class="ico">$</span>
+          <div class="desc">付過路費 ${actualFee} 給 ${owner.name}<br><small>付完換下一組</small></div>
+        </button>
+        <button class="action-btn challenge" onclick="actionChallengeOwner(${idx})">
+          <span class="ico">⚔</span>
+          <div class="desc">發起挑戰<br><small>挑戰擁有者，看雙方表現</small></div>
+        </button>
+      `;
+    }
+
+    html += `</div>`;
+  }
+
+  document.getElementById('m-body').innerHTML = html;
+  modal.classList.add('show');
+}
+
+/* ===== 行動 ===== */
+function actionBuyLand(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  const tile = TILES[idx];
+  if (team.score < tile.price) {
+    if (!confirm(`${team.name} 的積分不足以支付 ${tile.price}！是否仍要購買？（積分將變負數）`)) return;
+  }
+  team.score -= tile.price;
+  team.properties.push(idx);
+  state.log = `🎉 ${team.name} 挑戰成功，買下「${tile.name}」(-${tile.price})`;
+  closeModal();
+  endTurn();
+}
+
+function actionFailChallenge() {
+  const team = state.teams[state.currentTeamIdx];
+  const tile = TILES[team.pos];
+  state.log = `😢 ${team.name} 挑戰「${tile.name}」失敗，換下一組`;
+  closeModal();
+  endTurn();
+}
+
+function actionSkip() {
+  closeModal();
+  endTurn();
+}
+
+function actionPayRent(idx, fee) {
+  const team = state.teams[state.currentTeamIdx];
+  const owner = findOwner(idx);
+  if (!owner) return;
+  team.score -= fee;
+  owner.score += fee;
+  if (team.skipNextRent) team.skipNextRent = false;
+  if (owner.nextRentDouble) owner.nextRentDouble = false;
+  state.log = `💸 ${team.name} 付 ${fee} 過路費給 ${owner.name}`;
+  closeModal();
+  endTurn();
+}
+
+function actionChallengeOwner(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  const owner = findOwner(idx);
+  const tile = TILES[idx];
+  const fee = feeFor(tile.price);
+  let html = `
+    <div class="status-banner">⚔️ 挑戰 ${owner.name} 中！選擇結果：</div>
+    <div class="action-buttons">
+      <button class="action-btn success" onclick="resolveChallenge(${idx}, 'win')">
+        <span class="ico">🏆</span>
+        <div class="desc">挑戰者 (${team.name}) 勝<br><small>以 ${tile.price} 買入價搶下地產，積分付給 ${owner.name}</small></div>
+      </button>
+      <button class="action-btn fail" onclick="resolveChallenge(${idx}, 'lose')">
+        <span class="ico">😭</span>
+        <div class="desc">挑戰者 (${team.name}) 敗<br><small>付過路費 ${fee} + 罰款 20 給 ${owner.name}</small></div>
+      </button>
+      <button class="action-btn skip" onclick="actionPayRent(${idx}, ${fee})">
+        <span class="ico">←</span>
+        <div class="desc">取消，改付過路費</div>
+      </button>
+    </div>
+  `;
+  document.getElementById('m-body').innerHTML = html;
+}
+
+function resolveChallenge(idx, result) {
+  const team = state.teams[state.currentTeamIdx];
+  const owner = findOwner(idx);
+  const tile = TILES[idx];
+  if (result === 'win') {
+    team.score -= tile.price;
+    owner.score += tile.price;
+    owner.properties = owner.properties.filter(p => p !== idx);
+    team.properties.push(idx);
+    state.log = `🏆 ${team.name} 挑戰勝利！搶下「${tile.name}」`;
+  } else {
+    const fee = feeFor(tile.price);
+    const total = fee + 20;
+    team.score -= total;
+    owner.score += total;
+    state.log = `😭 ${team.name} 挑戰失敗，付 ${total} 給 ${owner.name}（過路費 ${fee} + 罰款 20）`;
+  }
+  closeModal();
+  endTurn();
+}
+
+function endTurn() {
+  nextTurn();
+  saveState();
+  renderAll();
+}
+
+/* ===== 卡片 ===== */
+/* 等待觀眾頁抽牌時，主持人頁顯示的提示視窗 */
+function showWaitingForDraw(kind) {
+  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
+  document.getElementById('m-name').textContent = kind === 'chance' ? '機會' : '命運';
+  document.getElementById('m-code').textContent = 'WAITING FOR DRAW';
+
+  const team = state.teams[state.currentTeamIdx];
+  let html = `
+    <div class="status-banner">
+      🎴 請現場觀眾在大螢幕點擊卡牌抽牌！
+    </div>
+    <div class="rules-block" style="text-align:center;">
+      <div class="rules-label">${kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+      ${team.name} 踩到${kind === 'chance' ? '機會' : '命運'}格。<br>
+      抽牌結果出來後，這裡會自動顯示效果與確認按鈕。
+    </div>
+    <div class="action-buttons">
+      <button class="action-btn skip" onclick="hostDrawNow()">
+        <span class="ico">🎲</span>
+        <div class="desc">改由主持人直接抽牌<br><small>觀眾沒空操作時使用</small></div>
+      </button>
+    </div>
+  `;
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+/* 主持人改為自己抽牌（直接用已預定的 cardIndex） */
+function hostDrawNow() {
+  if (!pendingCardDraw) { closeModal(); return; }
+  const { kind, tileIdx, cardIndex } = pendingCardDraw;
+  receiveCardDrawn(cardIndex);
+}
+
+/* 收到抽牌結果（來自觀眾頁，或主持人自抽）後顯示卡片效果 */
+function receiveCardDrawn(cardIndex) {
+  if (!pendingCardDraw) return;
+  const { kind, tileIdx } = pendingCardDraw;
+  const deck = kind === 'chance' ? CHANCE_CARDS : FATE_CARDS;
+  const card = deck[cardIndex] || deck[0];
+  pendingCardDraw = null;
+  showCardModal(tileIdx, card, kind);
+}
+
+function showCardModal(tileIdx, card, kind) {
+  const team = state.teams[state.currentTeamIdx];
+  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
+  document.getElementById('m-name').textContent = card.name;
+  document.getElementById('m-code').textContent = '';
+
+  let html = `
+    <div class="card-draw ${kind}">
+      <div class="card-type-tag">${kind === 'chance' ? '✨ CHANCE' : '🌀 FATE'}</div>
+      <div class="card-name">${card.name}</div>
+      <div class="card-effect">${card.desc}</div>
+    </div>
+    <div class="action-buttons">
+  `;
+
+  if (card.effect === 'gain') {
+    html += `<button class="action-btn success" onclick="cardEffect_gain(${card.value})"><span class="ico">$</span><div class="desc">確認 — ${team.name} 獲得 ${card.value} 積分</div></button>`;
+  } else if (card.effect === 'lose') {
+    html += `<button class="action-btn fail" onclick="cardEffect_lose(${card.value})"><span class="ico">−</span><div class="desc">確認 — ${team.name} 失去 ${card.value} 積分</div></button>`;
+  } else if (card.effect === 'tax_all') {
+    html += `<button class="action-btn fail" onclick="cardEffect_taxAll(${card.value})"><span class="ico">$</span><div class="desc">確認 — 付給其他每一組各 ${card.value} 積分</div></button>`;
+  } else if (card.effect === 'goto_vacation') {
+    html += `<button class="action-btn fail" onclick="cardEffect_gotoVacation()"><span class="ico">🏖</span><div class="desc">確認 — 移動到度假格並停留一回合</div></button>`;
+  } else if (card.effect === 'back_3') {
+    html += `<button class="action-btn fail" onclick="cardEffect_back3()"><span class="ico">←</span><div class="desc">確認 — 退後 3 格並執行該格效果</div></button>`;
+  } else if (card.effect === 'skip_toll') {
+    html += `<button class="action-btn success" onclick="cardEffect_skipToll()"><span class="ico">🛡</span><div class="desc">確認 — 下次踩到別人的地免付過路費</div></button>`;
+  } else if (card.effect === 'next_toll_double') {
+    html += `<button class="action-btn fail" onclick="cardEffect_nextTollDouble()"><span class="ico">⚠</span><div class="desc">確認 — 下次踩到別人的地過路費加倍</div></button>`;
+  } else {
+    html += `
+      <div class="rules-block"><div class="rules-label">⚠️ MANUAL</div>此卡需要主持人協助執行。完成後請點下方確認結束回合。</div>
+      <button class="action-btn skip" onclick="cardEffect_manualDone()"><span class="ico">✓</span><div class="desc">已執行完畢 — 結束回合</div></button>
+    `;
+  }
+
+  html += `</div>`;
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+
+  // 把抽到的卡片結果同步到觀眾頁顯示
+  broadcast({
+    type: 'card-result',
+    kind: kind,
+    card: { name: card.name, desc: card.desc },
+    teamName: state.teams[state.currentTeamIdx].name,
+  });
+}
+
+function cardEffect_gain(value) {
+  const team = state.teams[state.currentTeamIdx];
+  team.score += value;
+  state.log = `🎴 ${team.name} 抽到「神來一筆」+${value}`;
+  closeModal(); endTurn();
+}
+function cardEffect_lose(value) {
+  const team = state.teams[state.currentTeamIdx];
+  team.score -= value;
+  state.log = `🎴 ${team.name} 抽到「人生不如意」-${value}`;
+  closeModal(); endTurn();
+}
+function cardEffect_taxAll(value) {
+  const team = state.teams[state.currentTeamIdx];
+  state.teams.forEach(t => {
+    if (t.id !== team.id) { team.score -= value; t.score += value; }
+  });
+  state.log = `🎴 ${team.name} 全員徵稅，共付出 ${value * 3}`;
+  closeModal(); endTurn();
+}
+function cardEffect_gotoVacation() {
+  const team = state.teams[state.currentTeamIdx];
+  team.pos = 14;
+  team.skipTurn = true;
+  state.log = `🎴 ${team.name} 直奔度假村！下回合休息`;
+  closeModal(); endTurn();
+}
+function cardEffect_back3() {
+  const team = state.teams[state.currentTeamIdx];
+  team.pos = (team.pos - 3 + 28) % 28;
+  state.log = `🎴 ${team.name} 退後 3 格到「${TILES[team.pos].name}」`;
+  saveState(); renderAll(); closeModal();
+  setTimeout(() => handleTileLanding(team.pos), 400);
+}
+function cardEffect_skipToll() {
+  const team = state.teams[state.currentTeamIdx];
+  team.skipNextRent = true;
+  state.log = `🎴 ${team.name} 獲得「跳過風險」護身符`;
+  closeModal(); endTurn();
+}
+function cardEffect_nextTollDouble() {
+  const team = state.teams[state.currentTeamIdx];
+  team.nextRentDouble = true;
+  state.log = `🎴 ${team.name} 中招「過路費加倍」`;
+  closeModal(); endTurn();
+}
+function cardEffect_manualDone() {
+  closeModal(); endTurn();
+}
+
+/* ===== Modal 通用 ===== */
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+  broadcast({ type: 'close-modal' });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+/* ===== 隊伍詳細 ===== */
+function showTeamDetail(teamIdx) {
+  const team = state.teams[teamIdx];
+  document.getElementById('m-tag').textContent = `${team.emoji} TEAM`;
+  document.getElementById('m-name').textContent = team.name;
+  document.getElementById('m-code').textContent = `總資產 ${calcAsset(team)}`;
+
+  let propsHtml = '';
+  if (team.properties.length === 0) {
+    propsHtml = '<div style="text-align:center; color:var(--ink-soft); padding:8px;">尚未持有任何地產</div>';
+  } else {
+    propsHtml = team.properties.map(idx => {
+      const t = TILES[idx];
+      return `<div style="display:flex; justify-content:space-between; padding:6px 10px; border-bottom:1px dotted rgba(26,26,26,0.2);">
+        <span>${t.emoji} ${t.name}</span>
+        <span style="font-family:'Archivo Black', sans-serif;">$${t.price}</span>
+      </div>`;
+    }).join('');
+  }
+
+  let html = `
+    <div class="price-card">
+      <div class="price-item">
+        <div class="price-label">SCORE</div>
+        <div class="price-value">${team.score}</div>
+      </div>
+      <div class="price-item">
+        <div class="price-label">TOTAL</div>
+        <div class="price-value">${calcAsset(team)}</div>
+      </div>
+    </div>
+    <div class="rules-block">
+      <div class="rules-label">PROPERTIES (${team.properties.length})</div>
+      ${propsHtml}
+    </div>
+    <div class="rules-block">
+      <div class="rules-label">STATUS</div>
+      📍 位置：${TILES[team.pos].name}<br>
+      ${team.skipTurn ? '🏖️ 度假中（下回合跳過）<br>' : ''}
+      ${team.skipNextRent ? '🛡️ 跳過風險（下次免付過路費）<br>' : ''}
+      ${team.nextRentDouble ? '⚠️ 過路費加倍（下次踩別人地加倍）<br>' : ''}
+      ${(!team.skipTurn && !team.skipNextRent && !team.nextRentDouble) ? '✨ 無特殊狀態' : ''}
+    </div>
+    <button class="action-btn pay" onclick="adjustScoreFor(${teamIdx})" style="width:100%;">
+      <span class="ico">$</span>
+      <div class="desc">調整 ${team.name} 的積分</div>
+    </button>
+  `;
+
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+function calcAsset(team) {
+  let total = team.score;
+  team.properties.forEach(idx => total += TILES[idx].price);
+  return total;
+}
+
+function adjustScoreFor(teamIdx) {
+  const team = state.teams[teamIdx];
+  const input = prompt(`調整 ${team.name} 的積分\n目前：${team.score}\n\n輸入要「增加」的數值（負數為減少）：`, '0');
+  if (input === null) return;
+  const delta = parseInt(input, 10);
+  if (isNaN(delta)) { alert('請輸入有效數字！'); return; }
+  team.score += delta;
+  state.log = `💰 主持人調整 ${team.name} 積分 ${delta >= 0 ? '+' : ''}${delta}`;
+  closeModal();
+  saveState();
+  renderAll();
+}
+
+function showRanking() {
+  document.getElementById('m-tag').textContent = '#RANKING';
+  document.getElementById('m-name').textContent = '當前排名';
+  document.getElementById('m-code').textContent = '依總資產排序';
+
+  const sorted = [...state.teams].map(t => ({ ...t, asset: calcAsset(t) }))
+    .sort((a, b) => b.asset - a.asset);
+  const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+
+  let html = '<div class="rules-block" style="padding: 8px;">';
+  sorted.forEach((t, i) => {
+    html += `
+      <div style="display:flex; align-items:center; gap:10px; padding:10px; border-bottom: ${i === 3 ? 'none' : '2px dashed rgba(26,26,26,0.15)'};">
+        <span style="font-size: 24px;">${medals[i]}</span>
+        <div class="team-piece ${t.color}"></div>
+        <div style="flex-grow: 1;">
+          <div style="font-family: 'Archivo Black', 'Noto Sans TC', sans-serif; font-size: 16px;">${t.name}</div>
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; color: var(--ink-soft);">手上 ${t.score} + 地產 ${t.asset - t.score}</div>
+        </div>
+        <div style="font-family: 'Archivo Black', sans-serif; font-size: 22px; color: var(--c-fitness);">
+          ${t.asset}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+/* ===== 觀眾頁連線狀態 ===== */
+if (channel) {
+  channel.onmessage = (e) => {
+    if (e.data && e.data.type === 'watch-hello') {
+      watchOpened = true;
+      updateSyncStatus();
+      // 主動把當前狀態廣播給觀眾頁
+      channel.postMessage({ type: 'state', state });
+    }
+    if (e.data && e.data.type === 'watch-ping') {
+      watchOpened = true;
+      updateSyncStatus();
+    }
+    // 觀眾頁完成抽牌
+    if (e.data && e.data.type === 'card-drawn') {
+      receiveCardDrawn(e.data.cardIndex);
+    }
+  };
+}
+
+function updateSyncStatus() {
+  const dot = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (watchOpened) {
+    dot.classList.add('connected');
+    text.textContent = '觀眾頁已連線';
+  } else {
+    dot.classList.remove('connected');
+    text.textContent = '未連接觀眾頁';
+  }
+}
+
+// 每 3 秒重置一次「已連線」狀態，靠觀眾頁的 ping 來維持
+setInterval(() => {
+  watchOpened = false;
+  updateSyncStatus();
+}, 4000);
+
+/* ===== 啟動 ===== */
+loadState();
+renderAll();
+</script>
+
+</body>
+</html>

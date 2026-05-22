@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>📺 觀眾頁 ｜ 人生大富翁</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F8F4EA;
+    --bg-card: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #5A5A5A;
+
+    --c-fitness:   #E74C3C;
+    --c-knowledge: #2E5BBA;
+    --c-bible:     #C9A0E8;
+    --c-friend:    #F4A261;
+    --c-team:      #2A7F62;
+    --c-chance:    #F7C5C5;
+    --c-fate:      #FFC857;
+
+    --accent-pink:  #F4B5C7;
+
+    --team-white:  #FFFFFF;
+    --team-blue:   #2E5BBA;
+    --team-yellow: #FFC857;
+    --team-red:    #E74C3C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    font-family: 'Noto Sans TC', 'Space Grotesk', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(26,26,26,0.06) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  .stage {
+    min-height: 100vh;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "header header"
+      "teams board"
+      "log    log";
+    gap: 20px;
+  }
+
+  /* ===== Header ===== */
+  .stage-header {
+    grid-area: header;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .brand h1 {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(32px, 4vw, 56px);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .brand .subtitle {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(11px, 1.2vw, 14px);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .turn-indicator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 14px 20px;
+    border: 3px solid var(--ink);
+    box-shadow: 5px 5px 0 rgba(26,26,26,0.15);
+  }
+
+  .turn-indicator .label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 1.1vw, 12px);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .turn-indicator .current-team {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(20px, 2.4vw, 32px);
+    letter-spacing: -0.5px;
+  }
+
+  .turn-piece {
+    width: clamp(20px, 2.2vw, 30px);
+    height: clamp(20px, 2.2vw, 30px);
+    border: 2.5px solid var(--bg);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--bg);
+  }
+  .turn-piece.team-white  { background: var(--team-white); }
+  .turn-piece.team-blue   { background: var(--team-blue); }
+  .turn-piece.team-yellow { background: var(--team-yellow); }
+  .turn-piece.team-red    { background: var(--team-red); }
+
+  /* ===== 隊伍卡（左側）===== */
+  .teams-stack {
+    grid-area: teams;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: stretch;
+  }
+
+  .team-row {
+    flex-grow: 1;
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    padding: 14px 18px;
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "piece name  score"
+      "piece meta  score";
+    gap: 0 14px;
+    align-items: center;
+    transition: all 0.3s;
+  }
+
+  .team-row.active {
+    background: var(--c-fate);
+    transform: translate(-3px, -3px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .team-row.active::before {
+    content: 'NOW';
+    position: absolute;
+    top: -12px;
+    left: 16px;
+    background: var(--c-fitness);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 1.1vw, 12px);
+    padding: 3px 12px;
+    border: 2.5px solid var(--ink);
+    letter-spacing: 2px;
+  }
+
+  .team-row-piece {
+    grid-area: piece;
+    width: clamp(36px, 4vw, 56px);
+    height: clamp(36px, 4vw, 56px);
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: 3px 3px 0 var(--ink);
+    flex-shrink: 0;
+  }
+  .team-row-piece.team-white  { background: var(--team-white); }
+  .team-row-piece.team-blue   { background: var(--team-blue); }
+  .team-row-piece.team-yellow { background: var(--team-yellow); }
+  .team-row-piece.team-red    { background: var(--team-red); }
+
+  .team-row-name {
+    grid-area: name;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(18px, 2vw, 26px);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .team-row-meta {
+    grid-area: meta;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: clamp(11px, 1.2vw, 14px);
+    color: var(--ink-soft);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .team-row-score {
+    grid-area: score;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(28px, 3.6vw, 52px);
+    line-height: 1;
+    letter-spacing: -1.5px;
+    text-align: right;
+  }
+
+  .team-row-score-label {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(9px, 0.9vw, 11px);
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .team-row.active .team-row-meta,
+  .team-row.active .team-row-score-label {
+    color: var(--ink);
+    opacity: 0.7;
+  }
+
+  /* ===== 棋盤（右側）===== */
+  .board-section {
+    grid-area: board;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 100%;
+    max-width: 760px;
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    position: relative;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+
+  .board-center {
+    grid-column: 2 / 8;
+    grid-row: 2 / 8;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 18px;
+  }
+
+  .center-title {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(28px, 3.5vw, 48px);
+    letter-spacing: -1.5px;
+    margin-bottom: 6px;
+  }
+
+  .center-sub {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(11px, 1.2vw, 14px);
+    letter-spacing: 3px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  /* 大骰子 */
+  .center-dice {
+    width: clamp(70px, 8vw, 110px);
+    height: clamp(70px, 8vw, 110px);
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    padding: 14%;
+    margin-bottom: 16px;
+    animation: dice-shake 4s ease-in-out infinite;
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .dice-dot {
+    background: var(--ink);
+    border-radius: 50%;
+    align-self: center;
+    justify-self: center;
+    width: 100%;
+    height: 100%;
+    max-width: 14px;
+    max-height: 14px;
+  }
+  .dice-dot.d1 { grid-column: 1; grid-row: 1; }
+  .dice-dot.d2 { grid-column: 3; grid-row: 1; }
+  .dice-dot.d3 { grid-column: 2; grid-row: 2; }
+  .dice-dot.d4 { grid-column: 1; grid-row: 3; }
+  .dice-dot.d5 { grid-column: 3; grid-row: 3; }
+  @keyframes dice-shake {
+    0%, 88%, 100% { transform: rotate(-3deg); }
+    92% { transform: rotate(8deg) translateY(-4px); }
+    95% { transform: rotate(-5deg) translateY(2px); }
+  }
+
+  .center-verse {
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+    padding: 12px 18px;
+    max-width: 90%;
+    position: relative;
+  }
+  .verse-mark {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--c-fitness);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(9px, 1vw, 11px);
+    padding: 2px 12px;
+    border: 2px solid var(--ink);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .verse-text {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: clamp(11px, 1.1vw, 14px);
+    line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .verse-ref {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 1vw, 12px);
+    color: var(--ink-soft);
+  }
+
+  /* 格子 */
+  .tile {
+    border: 2px solid var(--ink);
+    margin: -1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+    background: var(--bg-card);
+    transition: all 0.3s;
+  }
+
+  .tile-tag {
+    width: 100%;
+    padding: 3px 4px;
+    background: var(--ink);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(6px, 0.7vw, 9px);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.2;
+    flex-shrink: 0;
+  }
+  .tile-tag .tile-price {
+    display: block;
+    font-size: clamp(7px, 0.8vw, 10px);
+    color: var(--c-fate);
+  }
+
+  .tile-visual {
+    flex-grow: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    font-size: clamp(16px, 2.2vw, 32px);
+    line-height: 1;
+  }
+
+  .tile.fitness   .tile-visual { background: var(--c-fitness); }
+  .tile.knowledge .tile-visual { background: var(--c-knowledge); }
+  .tile.bible     .tile-visual { background: var(--c-bible); }
+  .tile.friend    .tile-visual { background: var(--c-friend); }
+  .tile.team      .tile-visual { background: var(--c-team); }
+
+  .tile.chance .tile-visual,
+  .tile.fate .tile-visual {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .tile.chance .tile-visual { background: var(--c-chance); }
+  .tile.fate   .tile-visual { background: var(--c-fate); }
+
+  .tile-bigmark {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(18px, 2.5vw, 32px);
+    color: var(--ink);
+    line-height: 1;
+  }
+  .tile-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(6px, 0.8vw, 10px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .tile.corner { border-width: 2.5px; }
+  .tile.corner .tile-visual {
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+  }
+  .tile.corner .corner-emoji {
+    font-size: clamp(20px, 2.8vw, 40px);
+  }
+  .tile.corner .corner-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(8px, 1vw, 12px);
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+  .tile.corner-start    .tile-visual { background: var(--c-fate); }
+  .tile.corner-vacation .tile-visual { background: var(--c-chance); }
+  .tile.corner-portal-a .tile-visual,
+  .tile.corner-portal-b .tile-visual {
+    background: linear-gradient(135deg, var(--c-bible) 0%, var(--accent-pink) 100%);
+  }
+
+  /* 已被買下的地 - 右上折角標 */
+  .tile.owned {
+    overflow: hidden;
+  }
+  .tile.owned::after {
+    content: attr(data-owner-char);
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: clamp(28px, 3.5vw, 42px);
+    height: clamp(28px, 3.5vw, 42px);
+    background: var(--owner-color);
+    border-left: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+    clip-path: polygon(100% 0, 0 0, 100% 100%);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: clamp(3px, 0.5vw, 6px) clamp(4px, 0.6vw, 7px) 0 0;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(11px, 1.4vw, 16px);
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
+  }
+  /* 藍隊紅隊底色深，字改白 */
+  .tile.owned[data-owner-id="blue"]::after,
+  .tile.owned[data-owner-id="red"]::after {
+    color: white;
+  }
+
+  /* 點擊提示 cursor */
+  .tile { cursor: pointer; }
+
+  /* 棋子（觀眾頁更大、字、光暈、彈跳）*/
+  .pieces-on-tile {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    display: flex;
+    gap: 5px;
+    z-index: 3;
+    flex-wrap: wrap;
+    max-width: 70%;
+  }
+  .piece-marker {
+    width: clamp(20px, 2.6vw, 32px);
+    height: clamp(20px, 2.6vw, 32px);
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: 2px 2px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(11px, 1.4vw, 16px);
+    color: var(--ink);
+    line-height: 1;
+    position: relative;
+  }
+
+  /* 光暈：每支隊伍同色光暈 */
+  .piece-marker.team-white  {
+    background: var(--team-white);
+    box-shadow: 2px 2px 0 var(--ink), 0 0 0 5px rgba(255,255,255,0.55);
+  }
+  .piece-marker.team-blue   {
+    background: var(--team-blue);
+    color: white;
+    box-shadow: 2px 2px 0 var(--ink), 0 0 0 5px rgba(46,91,186,0.45);
+  }
+  .piece-marker.team-yellow {
+    background: var(--team-yellow);
+    box-shadow: 2px 2px 0 var(--ink), 0 0 0 5px rgba(255,200,87,0.55);
+  }
+  .piece-marker.team-red    {
+    background: var(--team-red);
+    color: white;
+    box-shadow: 2px 2px 0 var(--ink), 0 0 0 5px rgba(231,76,60,0.45);
+  }
+
+  /* 當前輪到的隊伍彈跳 */
+  .piece-marker.is-active {
+    animation: piece-bounce 1s ease-in-out infinite;
+    z-index: 4;
+  }
+
+  @keyframes piece-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* 高亮閃爍：剛動過的隊伍格子 */
+  .tile.last-action {
+    animation: highlight-blink 1.5s ease-in-out;
+  }
+  @keyframes highlight-blink {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); z-index: 10; box-shadow: 0 0 0 4px var(--c-fate); }
+  }
+
+  /* ===== Log 區（底部）===== */
+  .log-section {
+    grid-area: log;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 16px 24px;
+    border: 3px solid var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    box-shadow: 5px 5px 0 rgba(26,26,26,0.15);
+    overflow: hidden;
+  }
+
+  .log-label {
+    background: var(--c-fate);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(11px, 1.2vw, 14px);
+    padding: 4px 14px;
+    border: 2.5px solid var(--bg);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .log-content {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: clamp(14px, 1.6vw, 22px);
+    flex-grow: 1;
+    line-height: 1.4;
+    animation: log-fade 0.5s ease;
+  }
+
+  @keyframes log-fade {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ===== Toast 提示 ===== */
+  .big-toast {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: var(--c-fate);
+    border: 4px solid var(--ink);
+    padding: 30px 60px;
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(28px, 4vw, 56px);
+    box-shadow: 8px 8px 0 var(--ink);
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    letter-spacing: -1px;
+  }
+  .big-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  /* 連線提示 */
+  .offline-banner {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--c-fitness);
+    color: white;
+    padding: 10px 16px;
+    border: 2.5px solid var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    box-shadow: 3px 3px 0 var(--ink);
+    z-index: 100;
+    display: none;
+  }
+  .offline-banner.show { display: block; animation: pulse-bg 2s ease-in-out infinite; }
+  @keyframes pulse-bg {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-2px, -2px); }
+  }
+
+  /* ===== Modal ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--bg-card);
+    border: 3px solid var(--ink);
+    max-width: 560px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 6px 6px 0 var(--ink);
+    animation: modalPop 0.3s ease;
+  }
+  @keyframes modalPop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 2.5px solid var(--ink);
+    position: relative;
+  }
+  .modal-tag {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border: 2px solid var(--ink);
+    margin-bottom: 8px;
+    background: var(--bg);
+    text-transform: uppercase;
+  }
+  .modal h2 {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: 24px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+  .modal .code {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    cursor: pointer;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 18px;
+  }
+  .modal-close:hover {
+    background: var(--c-fitness);
+    color: white;
+  }
+  .modal-body {
+    padding: 18px 24px 28px;
+    font-size: 15px;
+  }
+
+  .owner-banner {
+    background: var(--banner-color, var(--c-fate));
+    border: 2.5px solid var(--ink);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+  }
+
+  .price-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 14px;
+    border: 2.5px solid var(--ink);
+  }
+  .price-item {
+    padding: 12px;
+    text-align: center;
+    border-right: 2.5px solid var(--ink);
+  }
+  .price-item:last-child { border-right: none; }
+  .price-item:nth-child(1) { background: var(--c-fitness); color: white; }
+  .price-item:nth-child(2) { background: var(--c-fate); color: var(--ink); }
+  .price-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    opacity: 0.85;
+  }
+  .price-value {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .price-value .unit {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px;
+    margin-left: 3px;
+    opacity: 0.85;
+  }
+
+  .rules-block {
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    line-height: 1.8;
+    font-size: 14px;
+    white-space: pre-line;
+  }
+  .rules-label {
+    display: inline-block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 2px;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 3px 10px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  /* 響應式：直式或小螢幕 */
+  @media (max-width: 900px), (orientation: portrait) {
+    .stage {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto;
+      grid-template-areas:
+        "header"
+        "board"
+        "teams"
+        "log";
+    }
+    .teams-stack {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .team-row {
+      flex: 1 1 calc(50% - 7px);
+      min-width: 200px;
+    }
+  }
+  /* ===== 抽牌互動視窗 ===== */
+  .draw-stage {
+    text-align: center;
+    padding: 8px 0 4px;
+  }
+
+  .draw-headline {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(20px, 2.4vw, 30px);
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .draw-hint {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: clamp(13px, 1.4vw, 16px);
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+  }
+
+  /* 翻牌容器 */
+  .flip-card {
+    width: clamp(200px, 60vw, 260px);
+    height: clamp(280px, 80vw, 360px);
+    margin: 0 auto 18px;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+  .flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.7s cubic-bezier(0.4, 0.1, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+  .flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+  }
+  .flip-card.idle .flip-card-inner {
+    animation: card-wiggle 1.6s ease-in-out infinite;
+  }
+  @keyframes card-wiggle {
+    0%, 100% { transform: rotate(-2.5deg) translateY(0); }
+    50%      { transform: rotate(2.5deg) translateY(-8px); }
+  }
+
+  .flip-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border: 4px solid var(--ink);
+    box-shadow: 7px 7px 0 var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22px 18px;
+  }
+
+  /* 牌背 */
+  .flip-back {
+    background: var(--ink);
+    color: var(--bg);
+    gap: 14px;
+  }
+  .flip-back.chance { background: #b9446b; }
+  .flip-back.fate   { background: #1f4fa3; }
+
+  .flip-back-mark {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(72px, 16vw, 110px);
+    line-height: 1;
+  }
+  .flip-back-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(13px, 1.6vw, 18px);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+  .flip-back-tap {
+    margin-top: 6px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: clamp(12px, 1.4vw, 15px);
+    background: var(--c-fate);
+    color: var(--ink);
+    border: 2.5px solid var(--bg);
+    padding: 6px 16px;
+    animation: tap-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes tap-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+
+  /* 牌面 */
+  .flip-front {
+    transform: rotateY(180deg);
+    gap: 12px;
+  }
+  .flip-front.chance { background: var(--c-chance); }
+  .flip-front.fate   { background: var(--c-fate); }
+
+  .flip-front-tag {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 1.2vw, 13px);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    background: var(--bg-card);
+    border: 2.5px solid var(--ink);
+    padding: 4px 12px;
+  }
+  .flip-front-name {
+    font-family: 'Archivo Black', 'Noto Sans TC', sans-serif;
+    font-size: clamp(26px, 4vw, 38px);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .flip-front-desc {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 500;
+    font-size: clamp(13px, 1.5vw, 16px);
+    line-height: 1.6;
+  }
+
+  .draw-result-note {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: clamp(13px, 1.5vw, 16px);
+    background: var(--bg);
+    border: 2.5px solid var(--ink);
+    padding: 10px 16px;
+    margin-top: 4px;
+    display: none;
+  }
+  .draw-result-note.show { display: block; }
+
+  /* 觀眾頁規則 modal 上的「現場進行中」提示條 */
+  .live-banner {
+    background: var(--c-fitness);
+    color: white;
+    border: 2.5px solid var(--ink);
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-family: 'Space Grotesk', 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  /* modal 自動彈出時的進場強調 */
+  .modal-backdrop.auto-pop .modal {
+    animation: modalPopBig 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalPopBig {
+    0%   { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- Header -->
+  <div class="stage-header">
+    <div class="brand">
+      <h1>人生大富翁</h1>
+      <span class="subtitle">新酒小組 × 2026 退修會</span>
+    </div>
+    <div class="turn-indicator">
+      <div>
+        <div class="label">CURRENT TURN</div>
+        <div class="current-team">
+          <span class="turn-piece" id="turnPiece"></span>
+          <span id="currentTeamName">白隊</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 隊伍列 -->
+  <div class="teams-stack" id="teamsStack"></div>
+
+  <!-- 棋盤 -->
+  <div class="board-section">
+    <div class="board" id="board">
+      <div class="board-center">
+        <div class="center-title">擲骰子，闖人生</div>
+        <div class="center-sub">擲出你的下一步</div>
+        <div class="center-dice">
+          <span class="dice-dot d1"></span>
+          <span class="dice-dot d2"></span>
+          <span class="dice-dot d3"></span>
+          <span class="dice-dot d4"></span>
+          <span class="dice-dot d5"></span>
+        </div>
+        <div class="center-verse">
+          <span class="verse-mark">VERSE</span>
+          <div class="verse-text">「應當一無掛慮，只要凡事藉著禱告、祈求和感謝，將你們所要的告訴神。」</div>
+          <div class="verse-ref">— 腓立比書 4:6</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="log-section">
+    <span class="log-label">LATEST</span>
+    <div class="log-content" id="logContent">等待主持人開始遊戲 ...</div>
+  </div>
+
+</div>
+
+<!-- 大型 toast -->
+<div class="big-toast" id="bigToast">🎉 經過出發！</div>
+
+<!-- 離線提示 -->
+<div class="offline-banner" id="offlineBanner">
+  ⚠️ 未連接主持人頁
+</div>
+
+<!-- 規則 Modal -->
+<div class="modal-backdrop" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-header">
+      <span class="modal-tag" id="m-tag">主題</span>
+      <h2 id="m-name">遊戲名稱</h2>
+      <div class="code" id="m-code"></div>
+    </div>
+    <div class="modal-body" id="m-body"></div>
+  </div>
+</div>
+
+<script>
+const TILES = [
+  { kind: 'corner', sub: 'start', emoji: '🚀', name: '出發', desc: '經過：得 100 積分\n踩到：得 150 積分' },
+  { kind: 'fitness',   code: 'B1', name: '高角帽搬家', price: 140, emoji: '🎩', tag: 'FITNESS',
+    rules: '全員戴上生日尖角帽，視線會被帽簷壓低、變成很小的範圍。在這狀態下，全組要把指定物體搬運／放置到指定位置。\n搬運途中不能用手扶帽子、不能掀帽子。' },
+  { kind: 'knowledge', code: 'K1', name: '注音造詞', price: 100, emoji: '🔤', tag: 'KNOWLEDGE',
+    rules: '隨機抽出兩個注音符號（聲母／母音皆可），全組要在時限內一次成功且不重複地說出可以使用這兩個注音的字或詞。' },
+  { kind: 'chance', code: 'CH1', name: '機會', mark: '?', tag: 'CHANCE',
+    rules: '抽一張機會卡，依卡片指示執行效果！\n\n機會卡共6張：\n• 神來一筆（+150）\n• 捷徑（傳送）\n• 免費置產\n• 談判高手\n• 跳過風險\n• 雙倍奉獻' },
+  { kind: 'bible',     code: 'S1', name: '保羅基本關', price: 120, emoji: '📜', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 保羅原本的名字？（掃羅）\n2. 在哪條路上遇見耶穌？（大馬士革路）\n3. 保羅的職業？（製造帳篷）\n4. 提摩太是保羅的什麼人？（屬靈兒子／門徒）\n5. 保羅完成了幾次宣教旅行？（三次）' },
+  { kind: 'friend',    code: 'F1', name: '壽星點名', price: 80, emoji: '🎂', tag: 'FRIEND',
+    rules: '主持人指定一個月份，全組要在時限內講出該月份所有壽星的名字。\n例：「6月的壽星有哪些？」\n漏一人即失敗。' },
+  { kind: 'team',      code: 'T1', name: '默契比手勢', price: 140, emoji: '✋', tag: 'TEAM',
+    rules: '全組集體聽口令，主持人喊出一個指定動作或圖形（如「愛心」、「比讚」、「OK」），全組要在3秒內同時比出一樣的姿勢。\n所有人一致才算成功。' },
+  { kind: 'corner', sub: 'portal-a', emoji: '🔀', name: '傳送 A', desc: '直接傳送到傳送點 B\n並執行 B 旁邊的下一格效果' },
+  { kind: 'knowledge', code: 'K2', name: '蘋果半邊唸字卡', price: 120, emoji: '🍎', tag: 'KNOWLEDGE',
+    rules: '依順序翻開題字卡，按圖示指定的「位置」唸出該字。\n例：圖片是「右半邊的蘋果」→ 唸「果」；左半邊 → 唸「蘋」。\n中途唸錯或停頓過久即失敗。' },
+  { kind: 'fitness',   code: 'B2', name: '口令舞蹈', price: 160, emoji: '💃', tag: 'FITNESS',
+    rules: '全組接受主持人連續下達的「口令＋動作」指令（例：右手舉、左腳跨、轉一圈），要連續成功完成三次完整指令組合。\n中間有人做錯或不同步即重新計算。' },
+  { kind: 'fate', code: 'FA1', name: '命運', mark: '!', tag: 'FATE',
+    rules: '抽一張命運卡，依卡片指示執行效果！\n\n命運卡共6張：\n• 人生不如意（-120）\n• 退後三格\n• 度假去\n• 強制拍賣\n• 過路費加倍\n• 全員徵稅' },
+  { kind: 'bible',     code: 'S2', name: '保羅書信關', price: 140, emoji: '✉️', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 「愛是恆久忍耐」出自？（哥林多前書）\n2. 「靠著那加給我力量的，凡事都能做」出自？（腓立比書4:13）\n3. 「不要效法這個世界」出自羅馬書第幾章？（第12章）\n4. 腓立比書的主題情感？（喜樂）\n5. 保羅在哪裡寫了腓立比書？（監獄）' },
+  { kind: 'friend',    code: 'F2', name: '新人關係連連看', price: 100, emoji: '🔗', tag: 'FRIEND',
+    rules: '主持人指定兩位新酒人或團契之友，全組要說出他們之間的關係。\n例：「亭雅跟柔柔是什麼關係？」\n答錯或答不出來即失敗。' },
+  { kind: 'team',      code: 'T2', name: '接龍造句', price: 160, emoji: '🐉', tag: 'TEAM',
+    rules: '主持人給出一個起始句，全組依順序每人加「一個字」，每加一字後句子都必須是有意義的中文句子。' },
+  { kind: 'corner', sub: 'vacation', emoji: '🏖️', name: '度假', desc: '停留一回合不能行動\n下回合開始前得 50 積分' },
+  { kind: 'fitness',   code: 'B3', name: '集體跑起來', price: 180, emoji: '🏃', tag: 'FITNESS',
+    rules: '全組同時起跑（原地高抬腿或繞圈），時間30秒。\n全組計步器（或手機計步）總和必須超過 X 步才算成功。' },
+  { kind: 'chance', code: 'CH2', name: '機會', mark: '?', tag: 'CHANCE',
+    rules: '抽一張機會卡，依卡片指示執行效果！\n\n機會卡共6張：\n• 神來一筆（+150）\n• 捷徑（傳送）\n• 免費置產\n• 談判高手\n• 跳過風險\n• 雙倍奉獻' },
+  { kind: 'knowledge', code: 'K3', name: '手寫國字題', price: 140, emoji: '✏️', tag: 'KNOWLEDGE',
+    rules: '主持人從聖經中選出「偏難或冷門」的中文字（如：祭、贖、僕、屬、誡、衪…），全組要在白板或紙上正確手寫那個字。\n錯字、缺筆、寫成注音／同音字皆失敗。' },
+  { kind: 'bible',     code: 'S3', name: '信仰基礎關', price: 160, emoji: '⛪', tag: 'BIBLE',
+    rules: '全組4–5人輪流各答一題，全部答對才能買地。\n\n例題：\n1. 十誡的第一誡？（除我以外，你不可有別的神）\n2. 耶穌最後的晚餐是什麼節期？（逾越節）\n3. 聖靈的果子有幾樣？（九樣）\n4. 主禱文的開頭？（我們在天上的父）\n5. 復活節紀念的是什麼？（耶穌從死裡復活）' },
+  { kind: 'friend',    code: 'F3', name: '小組事工小百科', price: 120, emoji: '📚', tag: 'FRIEND',
+    rules: '回答關於小組／團契本年度活動或主題的問題。\n例：「今年辦過幾次同工會？」、「上一季的查經主題是什麼？」\n答錯即失敗。' },
+  { kind: 'team',      code: 'T3', name: '無聲指揮官', price: 180, emoji: '🤫', tag: 'TEAM',
+    rules: '全組分配三種角色：\n• 指導員（1人）：知道目標動作或造型，但只能比手畫腳，不能出聲。\n• 翻譯官（1人）：唯一可以說話的人，負責把指導員的手勢翻譯成口語指令。\n• 擺動作組（其餘人）：依翻譯官的口語指令完成動作。\n全程除了翻譯官之外，所有人都不能發出任何聲音。' },
+  { kind: 'corner', sub: 'portal-b', emoji: '🔀', name: '傳送 B', desc: '直接傳送到傳送點 A\n並執行 A 旁邊的下一格效果' },
+  { kind: 'fate', code: 'FA2', name: '命運', mark: '!', tag: 'FATE',
+    rules: '抽一張命運卡，依卡片指示執行效果！\n\n命運卡共6張：\n• 人生不如意（-120）\n• 退後三格\n• 度假去\n• 強制拍賣\n• 過路費加倍\n• 全員徵稅' },
+  { kind: 'bible',     code: 'S4', name: '查經應用關', price: 180, emoji: '📖', tag: 'BIBLE',
+    rules: '此格為開放式，言之有理即算過關。\n\n例題：\n1. 保羅說「我靠主大大地喜樂」，他當時的處境如何？\n2. 羅馬書8章說我們是神的什麼？\n3. 哥林多前書13章除了講愛，還帶出什麼提醒？\n4. 你查過的保羅書信中，哪一節對你最有印象？\n5. 保羅的生命給你什麼激勵？' },
+  { kind: 'friend',    code: 'F4', name: '三位組員大解析', price: 140, emoji: '🔍', tag: 'FRIEND',
+    rules: '主持人隨機抽出三位組員（可跨組），全組要說出這三位的「職業」與「興趣」。\n答錯一項即失敗。' },
+  { kind: 'fitness',   code: 'B4', name: '人體猜拳', price: 200, emoji: '✊', tag: 'FITNESS',
+    rules: '全員用身體仿作「剪刀、石頭、布」的造型，跟主持人猜拳。\n直到全員「各贏兩次」才算過關。' },
+  { kind: 'team',      code: 'T4', name: '聖靈ㄉ風', price: 200, emoji: '🌬️', tag: 'TEAM',
+    rules: '每位組員身邊都有「聖靈」陪伴——以一張衛生紙代表。\n全組要想辦法讓自己的衛生紙不掉到地上，維持 30 秒。' },
+  { kind: 'knowledge', code: 'K4', name: '誰是時間管理者', price: 160, emoji: '⏰', tag: 'KNOWLEDGE',
+    rules: '主持人隨機說出一個秒數（例：「23 秒」），喊「開始」後全組需估算時間，並在自認為時間到的瞬間大喊「停！」。\n停在指定秒數的 ±5 秒內算成功。' },
+];
+
+const KIND_LABEL = {
+  fitness: '#FITNESS', knowledge: '#KNOWLEDGE', bible: '#BIBLE',
+  friend: '#FRIEND', team: '#TEAM',
+  chance: '#CHANCE', fate: '#FATE', corner: '#CORNER',
+};
+
+function feeFor(price) {
+  if (price <= 100) return 40;
+  if (price <= 140) return 60;
+  if (price <= 180) return 80;
+  return 100;
+}
+
+const TEAMS = [
+  { id: 'white',  name: '白隊', emoji: '⚪', color: 'team-white',  hex: '#FFFFFF' },
+  { id: 'blue',   name: '藍隊', emoji: '🔵', color: 'team-blue',   hex: '#2E5BBA' },
+  { id: 'yellow', name: '黃隊', emoji: '🟡', color: 'team-yellow', hex: '#FFC857' },
+  { id: 'red',    name: '紅隊', emoji: '🔴', color: 'team-red',    hex: '#E74C3C' },
+];
+
+const STORAGE_KEY = 'monopoly_v5_state';
+const CHANNEL_NAME = 'monopoly_v5_sync';
+
+let state = {
+  teams: TEAMS.map(t => ({
+    id: t.id, name: t.name, emoji: t.emoji, color: t.color, hex: t.hex,
+    score: 900, pos: 0, properties: [],
+    skipNextRent: false, nextRentDouble: false, skipTurn: false,
+  })),
+  currentTeamIdx: 0,
+  log: '等待主持人開始遊戲 ...',
+};
+
+let lastLog = '';
+let lastActiveIdx = -1;
+let connected = false;
+let connectionTimer = null;
+
+const channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL_NAME) : null;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.teams && parsed.teams.length === 4) {
+        state = parsed;
+      }
+    }
+  } catch (e) {}
+}
+
+function getGridPos(idx) {
+  if (idx === 0) return { col: 1, row: 8 };
+  if (idx >= 1 && idx <= 6) return { col: 1 + idx, row: 8 };
+  if (idx === 7) return { col: 8, row: 8 };
+  if (idx >= 8 && idx <= 13) return { col: 8, row: 8 - (idx - 7) };
+  if (idx === 14) return { col: 8, row: 1 };
+  if (idx >= 15 && idx <= 20) return { col: 8 - (idx - 14), row: 1 };
+  if (idx === 21) return { col: 1, row: 1 };
+  if (idx >= 22 && idx <= 27) return { col: 1, row: 1 + (idx - 21) };
+  return { col: 1, row: 1 };
+}
+
+function findOwner(tileIdx) {
+  for (const team of state.teams) {
+    if (team.properties.includes(tileIdx)) return team;
+  }
+  return null;
+}
+
+function calcAsset(team) {
+  let total = team.score;
+  team.properties.forEach(idx => total += TILES[idx].price);
+  return total;
+}
+
+const board = document.getElementById('board');
+
+function renderBoard() {
+  Array.from(board.querySelectorAll('.tile')).forEach(el => el.remove());
+
+  TILES.forEach((t, idx) => {
+    const el = document.createElement('div');
+    el.className = `tile ${t.kind}` + (t.sub ? ` corner-${t.sub}` : '');
+    const pos = getGridPos(idx);
+    el.style.gridColumn = pos.col;
+    el.style.gridRow = pos.row;
+
+    const owner = findOwner(idx);
+    if (owner) {
+      el.classList.add('owned');
+      el.style.setProperty('--owner-color', owner.hex);
+      const labelMap = { white: '白', blue: '藍', yellow: '黃', red: '紅' };
+      el.dataset.ownerChar = labelMap[owner.id] || '';
+      el.dataset.ownerId = owner.id;
+    }
+
+    if (t.kind === 'corner') {
+      el.innerHTML = `
+        <div class="tile-visual">
+          <div class="corner-emoji">${t.emoji}</div>
+          <div class="corner-name">${t.name}</div>
+        </div>
+      `;
+    } else if (t.kind === 'chance' || t.kind === 'fate') {
+      el.innerHTML = `
+        <div class="tile-visual">
+          <div class="tile-bigmark">${t.mark}</div>
+          <div class="tile-label">${t.kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+        </div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="tile-tag">#${t.tag}<span class="tile-price">$${t.price}</span></div>
+        <div class="tile-visual">${t.emoji}</div>
+      `;
+    }
+
+    const teamsHere = state.teams.filter(team => team.pos === idx);
+    if (teamsHere.length > 0) {
+      const piecesEl = document.createElement('div');
+      piecesEl.className = 'pieces-on-tile';
+      teamsHere.forEach(team => {
+        const p = document.createElement('span');
+        const isActive = (team.id === state.teams[state.currentTeamIdx].id);
+        p.className = `piece-marker ${team.color}` + (isActive ? ' is-active' : '');
+        // 在圓點裡放隊伍單字（白／藍／黃／紅）
+        const labelMap = { white: '白', blue: '藍', yellow: '黃', red: '紅' };
+        p.textContent = labelMap[team.id] || '';
+        piecesEl.appendChild(p);
+      });
+      el.appendChild(piecesEl);
+    }
+
+    // 高亮目前隊伍所在格子
+    const activeTeam = state.teams[state.currentTeamIdx];
+    if (activeTeam.pos === idx && idx !== lastActiveIdx) {
+      el.classList.add('last-action');
+    }
+
+    el.addEventListener('click', () => openTileModal(idx));
+    board.appendChild(el);
+  });
+
+  lastActiveIdx = state.teams[state.currentTeamIdx].pos;
+}
+
+function renderTeams() {
+  const stack = document.getElementById('teamsStack');
+  stack.innerHTML = '';
+  state.teams.forEach((team, idx) => {
+    const row = document.createElement('div');
+    row.className = 'team-row' + (idx === state.currentTeamIdx ? ' active' : '');
+    row.innerHTML = `
+      <div class="team-row-piece ${team.color}"></div>
+      <div class="team-row-name">${team.name}</div>
+      <div class="team-row-meta">🏠 ${team.properties.length} 塊地 ／ 📍 ${TILES[team.pos].name}</div>
+      <div>
+        <div class="team-row-score-label">SCORE</div>
+        <div class="team-row-score">${team.score}</div>
+      </div>
+    `;
+    stack.appendChild(row);
+  });
+}
+
+function renderTurn() {
+  const team = state.teams[state.currentTeamIdx];
+  document.getElementById('currentTeamName').textContent = team.name;
+  const piece = document.getElementById('turnPiece');
+  piece.className = 'turn-piece ' + team.color;
+}
+
+function renderLog() {
+  const log = state.log || '...';
+  const el = document.getElementById('logContent');
+  if (log !== lastLog) {
+    // 強制重觸發動畫
+    el.classList.remove('log-content');
+    void el.offsetWidth;
+    el.classList.add('log-content');
+    lastLog = log;
+
+    // 特殊事件大型 toast
+    if (log.includes('經過出發')) {
+      showBigToast('🎉 經過出發！');
+    } else if (log.includes('挑戰勝利') || log.includes('挑戰成功')) {
+      showBigToast('🏆 ' + log);
+    } else if (log.includes('抽到')) {
+      showBigToast('🎴 ' + log);
+    }
+  }
+  el.textContent = log;
+}
+
+function renderAll() {
+  renderBoard();
+  renderTeams();
+  renderTurn();
+  renderLog();
+}
+
+function showBigToast(text) {
+  const t = document.getElementById('bigToast');
+  t.textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ===== 連線狀態 ===== */
+function setConnected(yes) {
+  connected = yes;
+  document.getElementById('offlineBanner').classList.toggle('show', !yes);
+}
+
+function pingHost() {
+  if (channel) {
+    channel.postMessage({ type: 'watch-ping' });
+  }
+}
+
+/* ===== 監聽主持人頁 ===== */
+if (channel) {
+  channel.onmessage = (e) => {
+    if (!e.data) return;
+
+    if (e.data.type === 'state' && e.data.state) {
+      state = e.data.state;
+      renderAll();
+      setConnected(true);
+      // 重置斷線計時
+      if (connectionTimer) clearTimeout(connectionTimer);
+      connectionTimer = setTimeout(() => setConnected(false), 8000);
+    }
+
+    // 主持人踩到一般地產 → 自動跳出規則
+    if (e.data.type === 'show-rule') {
+      openTileModal(e.data.tileIdx, { live: true });
+    }
+
+    // 主持人踩到機會／命運格 → 顯示可點擊的抽牌畫面
+    if (e.data.type === 'card-draw-prompt') {
+      openCardDraw(e.data.kind, e.data.tileIdx);
+    }
+
+    // 主持人端顯示了卡片結果 → 觀眾頁同步顯示牌面
+    if (e.data.type === 'card-result') {
+      showCardResult(e.data.kind, e.data.card, e.data.teamName);
+    }
+
+    // 主持人結束 / 關閉視窗 → 觀眾頁一併關閉
+    if (e.data.type === 'close-modal') {
+      closeModal();
+    }
+  };
+
+  // 一開始打招呼
+  channel.postMessage({ type: 'watch-hello' });
+  setInterval(pingHost, 2000);
+
+  // 8 秒沒收到狀態就判斷為離線
+  connectionTimer = setTimeout(() => setConnected(false), 8000);
+}
+
+/* ===== 啟動 ===== */
+loadState();
+renderAll();
+
+// 同時也監聽 localStorage 變化（同台電腦不同分頁的另一種同步機制）
+window.addEventListener('storage', (e) => {
+  if (e.key === STORAGE_KEY && e.newValue) {
+    try {
+      state = JSON.parse(e.newValue);
+      renderAll();
+      setConnected(true);
+    } catch (err) {}
+  }
+});
+
+// 全螢幕快捷
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'f' || e.key === 'F') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+});
+
+/* ===== 格子規則 modal ===== */
+function openTileModal(idx, opts) {
+  opts = opts || {};
+  const t = TILES[idx];
+  const owner = findOwner(idx);
+  const modal = document.getElementById('modal');
+  modal.querySelector('#modalContent').scrollTop = 0;
+
+  document.getElementById('m-tag').textContent = KIND_LABEL[t.kind] || '';
+  document.getElementById('m-name').textContent = t.name;
+  document.getElementById('m-code').textContent = t.code ? `CODE / ${t.code}` : '★ SPECIAL ★';
+
+  let html = '';
+
+  // 由主持人觸發（現場踩到此格）→ 顯示進行中提示條
+  if (opts.live) {
+    html += `<div class="live-banner">🔴 現場進行中 — 這組正在挑戰這一關</div>`;
+  }
+
+  // 擁有狀態 banner（一般地產才顯示）
+  if (owner && t.kind !== 'corner' && t.kind !== 'chance' && t.kind !== 'fate') {
+    const labelMap = { white: '白隊', blue: '藍隊', yellow: '黃隊', red: '紅隊' };
+    const textColor = (owner.id === 'blue' || owner.id === 'red') ? 'white' : '#1A1A1A';
+    html += `<div class="owner-banner" style="--banner-color: ${owner.hex}; color: ${textColor};">
+      🏠 此地由 <strong>${labelMap[owner.id]}</strong> 擁有
+    </div>`;
+  }
+
+  if (t.kind === 'corner') {
+    html += `<div class="rules-block"><div class="rules-label">EFFECT</div>${t.desc}</div>`;
+  } else if (t.kind === 'chance' || t.kind === 'fate') {
+    html += `<div class="rules-block"><div class="rules-label">RULE</div>${t.rules}</div>`;
+  } else {
+    html += `
+      <div class="price-card">
+        <div class="price-item">
+          <div class="price-label">買入價</div>
+          <div class="price-value">${t.price}<span class="unit">分</span></div>
+        </div>
+        <div class="price-item">
+          <div class="price-label">過路費</div>
+          <div class="price-value">${feeFor(t.price)}<span class="unit">分</span></div>
+        </div>
+      </div>
+      <div class="rules-block"><div class="rules-label">CHALLENGE</div>${t.rules}</div>
+    `;
+  }
+
+  document.getElementById('m-body').innerHTML = html;
+  modal.classList.add('show');
+  // 自動彈出時加強進場動畫
+  modal.classList.toggle('auto-pop', !!opts.live);
+}
+
+function closeModal() {
+  // 抽牌視窗在觀眾還沒翻牌前不可關閉，避免主持人卡在等待狀態
+  if (drawState && !drawState.done) {
+    const hint = document.getElementById('drawHint');
+    if (hint) {
+      hint.textContent = '👉 請先點卡牌抽牌，才能繼續！';
+      hint.style.color = 'var(--c-fitness)';
+      hint.style.fontWeight = '700';
+    }
+    return;
+  }
+  const modal = document.getElementById('modal');
+  modal.classList.remove('show');
+  modal.classList.remove('auto-pop');
+}
+
+/* ===== 抽牌互動 ===== */
+const CARD_COUNT = { chance: 6, fate: 6 };
+let drawState = null; // { kind, tileIdx, done }
+
+/* 主持人踩到機會／命運格 → 顯示可點擊翻牌 */
+function openCardDraw(kind, tileIdx) {
+  drawState = { kind: kind, tileIdx: tileIdx, done: false };
+
+  const modal = document.getElementById('modal');
+  modal.querySelector('#modalContent').scrollTop = 0;
+
+  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
+  document.getElementById('m-name').textContent = kind === 'chance' ? '機會' : '命運';
+  document.getElementById('m-code').textContent = kind === 'chance' ? 'CHANCE CARD' : 'FATE CARD';
+
+  const mark = kind === 'chance' ? '?' : '!';
+  const cnTag = kind === 'chance' ? '機會' : '命運';
+
+  const html = `
+    <div class="draw-stage">
+      <div class="draw-headline">${kind === 'chance' ? '✨ 抽機會牌' : '🌀 抽命運牌'}</div>
+      <div class="draw-hint" id="drawHint">由現場觀眾點一下卡牌，翻開命運！</div>
+
+      <div class="flip-card idle" id="flipCard" onclick="doFlip()">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-back ${kind}">
+            <div class="flip-back-mark">${mark}</div>
+            <div class="flip-back-label">${kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+            <div class="flip-back-tap">👆 點我抽牌</div>
+          </div>
+          <div class="flip-face flip-front ${kind}" id="flipFront">
+            <div class="flip-front-tag">${cnTag}</div>
+            <div class="flip-front-name" id="flipName">？</div>
+            <div class="flip-front-desc" id="flipDesc"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="draw-result-note" id="drawNote">
+        抽牌完成！請看主持人執行卡片效果。
+      </div>
+    </div>
+  `;
+  document.getElementById('m-body').innerHTML = html;
+  modal.classList.add('show');
+  modal.classList.add('auto-pop');
+}
+
+/* 觀眾點擊翻牌 */
+function doFlip() {
+  if (!drawState || drawState.done) return;
+  drawState.done = true;
+
+  const count = CARD_COUNT[drawState.kind] || 6;
+  const cardIndex = Math.floor(Math.random() * count);
+
+  // 通知主持人頁抽到的卡片
+  if (channel) {
+    try {
+      channel.postMessage({ type: 'card-drawn', cardIndex: cardIndex });
+    } catch (e) {}
+  }
+
+  // 牌面文字會由主持人回傳的 card-result 補上；先翻面
+  const card = document.getElementById('flipCard');
+  card.classList.remove('idle');
+  card.classList.add('flipped');
+
+  const hint = document.getElementById('drawHint');
+  if (hint) hint.textContent = '🎴 翻牌中 ...';
+}
+
+/* 收到主持人回傳的卡片結果 → 填入牌面文字 */
+function showCardResult(kind, card, teamName) {
+  const modal = document.getElementById('modal');
+
+  // 情況 A：觀眾正在抽牌畫面 → 把結果填進已翻開的牌面
+  const flipCard = document.getElementById('flipCard');
+  if (flipCard && drawState && drawState.kind === kind) {
+    if (!flipCard.classList.contains('flipped')) {
+      flipCard.classList.remove('idle');
+      flipCard.classList.add('flipped');
+    }
+    const nameEl = document.getElementById('flipName');
+    const descEl = document.getElementById('flipDesc');
+    if (nameEl) nameEl.textContent = card.name;
+    if (descEl) descEl.textContent = card.desc;
+
+    const hint = document.getElementById('drawHint');
+    if (hint) hint.textContent = `${teamName || ''} 抽到了 —`;
+
+    const note = document.getElementById('drawNote');
+    if (note) note.classList.add('show');
+
+    showBigToast((kind === 'chance' ? '✨ ' : '🌀 ') + card.name);
+    drawState = null;
+    return;
+  }
+
+  // 情況 B：主持人自己抽牌（觀眾頁沒在抽牌畫面）→ 直接顯示一張結果牌
+  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
+  document.getElementById('m-name').textContent = kind === 'chance' ? '機會' : '命運';
+  document.getElementById('m-code').textContent = 'RESULT';
+
+  const cnTag = kind === 'chance' ? '機會' : '命運';
+  const html = `
+    <div class="draw-stage">
+      <div class="draw-headline">${teamName || ''} 抽到了</div>
+      <div class="flip-card flipped" style="cursor:default;">
+        <div class="flip-card-inner">
+          <div class="flip-face flip-back ${kind}"></div>
+          <div class="flip-face flip-front ${kind}">
+            <div class="flip-front-tag">${cnTag}</div>
+            <div class="flip-front-name">${card.name}</div>
+            <div class="flip-front-desc">${card.desc}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('m-body').innerHTML = html;
+  modal.classList.add('show');
+  modal.classList.add('auto-pop');
+  showBigToast((kind === 'chance' ? '✨ ' : '🌀 ') + card.name);
+}
+</script>
+
+</body>
+</html>
