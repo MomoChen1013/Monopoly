@@ -7,11 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-
-<!-- Firebase SDK（CDN compat 版）-->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
 <style>
   :root {
     --bg: #F8F4EA;
@@ -1127,7 +1122,16 @@ let state = {
 const channel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL_NAME) : null;
 let watchOpened = false;
 let watchCheckTimer = null;
-let fbWriteOk = false;
+
+/* 等待觀眾頁抽牌時，暫存抽牌資訊 */
+let pendingCardDraw = null; // { kind, tileIdx }
+
+/* 廣播事件給觀眾頁（不影響 state） */
+function broadcast(msg) {
+  if (channel) {
+    try { channel.postMessage(msg); } catch (e) {}
+  }
+}
 
 function loadState() {
   try {
@@ -1146,21 +1150,6 @@ function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (channel) channel.postMessage({ type: 'state', state });
   } catch (e) {}
-
-  // 寫入 Firebase（跨裝置同步）
-  if (fbReady && fbDB) {
-    fbDB.ref(FIREBASE_GAME_PATH).set({
-      ...state,
-      _updatedAt: Date.now(),
-    }).then(() => {
-      fbWriteOk = true;
-      updateSyncStatus();
-    }).catch((err) => {
-      console.error('[Firebase] 寫入失敗：', err);
-      fbWriteOk = false;
-      updateSyncStatus();
-    });
-  }
 }
 
 function resetGame() {
@@ -1412,11 +1401,23 @@ function handleTileLanding(idx) {
 
   if (tile.kind === 'chance' || tile.kind === 'fate') {
     const deck = tile.kind === 'chance' ? CHANCE_CARDS : FATE_CARDS;
-    const card = deck[Math.floor(Math.random() * deck.length)];
-    showCardModal(idx, card, tile.kind);
+    // 觀眾頁有連線：讓觀眾點擊抽牌；否則主持人自己抽
+    if (watchOpened) {
+      const cardIndex = Math.floor(Math.random() * deck.length);
+      pendingCardDraw = { kind: tile.kind, tileIdx: idx, cardIndex };
+      state.log = `${team.name} 踩到${tile.kind === 'chance' ? '機會' : '命運'}格 — 等待現場抽牌 ...`;
+      saveState();
+      renderAll();
+      broadcast({ type: 'card-draw-prompt', kind: tile.kind, tileIdx: idx });
+      showWaitingForDraw(tile.kind);
+    } else {
+      const card = deck[Math.floor(Math.random() * deck.length)];
+      showCardModal(idx, card, tile.kind);
+    }
     return;
   }
 
+  broadcast({ type: 'show-rule', tileIdx: idx, isLanding: true });
   showTileInfo(idx, true);
 }
 
@@ -1622,6 +1623,50 @@ function endTurn() {
 }
 
 /* ===== 卡片 ===== */
+/* 等待觀眾頁抽牌時，主持人頁顯示的提示視窗 */
+function showWaitingForDraw(kind) {
+  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
+  document.getElementById('m-name').textContent = kind === 'chance' ? '機會' : '命運';
+  document.getElementById('m-code').textContent = 'WAITING FOR DRAW';
+
+  const team = state.teams[state.currentTeamIdx];
+  let html = `
+    <div class="status-banner">
+      🎴 請現場觀眾在大螢幕點擊卡牌抽牌！
+    </div>
+    <div class="rules-block" style="text-align:center;">
+      <div class="rules-label">${kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+      ${team.name} 踩到${kind === 'chance' ? '機會' : '命運'}格。<br>
+      抽牌結果出來後，這裡會自動顯示效果與確認按鈕。
+    </div>
+    <div class="action-buttons">
+      <button class="action-btn skip" onclick="hostDrawNow()">
+        <span class="ico">🎲</span>
+        <div class="desc">改由主持人直接抽牌<br><small>觀眾沒空操作時使用</small></div>
+      </button>
+    </div>
+  `;
+  document.getElementById('m-body').innerHTML = html;
+  document.getElementById('modal').classList.add('show');
+}
+
+/* 主持人改為自己抽牌（直接用已預定的 cardIndex） */
+function hostDrawNow() {
+  if (!pendingCardDraw) { closeModal(); return; }
+  const { kind, tileIdx, cardIndex } = pendingCardDraw;
+  receiveCardDrawn(cardIndex);
+}
+
+/* 收到抽牌結果（來自觀眾頁，或主持人自抽）後顯示卡片效果 */
+function receiveCardDrawn(cardIndex) {
+  if (!pendingCardDraw) return;
+  const { kind, tileIdx } = pendingCardDraw;
+  const deck = kind === 'chance' ? CHANCE_CARDS : FATE_CARDS;
+  const card = deck[cardIndex] || deck[0];
+  pendingCardDraw = null;
+  showCardModal(tileIdx, card, kind);
+}
+
 function showCardModal(tileIdx, card, kind) {
   const team = state.teams[state.currentTeamIdx];
   document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
@@ -1661,6 +1706,14 @@ function showCardModal(tileIdx, card, kind) {
   html += `</div>`;
   document.getElementById('m-body').innerHTML = html;
   document.getElementById('modal').classList.add('show');
+
+  // 把抽到的卡片結果同步到觀眾頁顯示
+  broadcast({
+    type: 'card-result',
+    kind: kind,
+    card: { name: card.name, desc: card.desc },
+    teamName: state.teams[state.currentTeamIdx].name,
+  });
 }
 
 function cardEffect_gain(value) {
@@ -1716,6 +1769,7 @@ function cardEffect_manualDone() {
 /* ===== Modal 通用 ===== */
 function closeModal() {
   document.getElementById('modal').classList.remove('show');
+  broadcast({ type: 'close-modal' });
 }
 
 document.addEventListener('keydown', (e) => {
@@ -1831,11 +1885,16 @@ if (channel) {
     if (e.data && e.data.type === 'watch-hello') {
       watchOpened = true;
       updateSyncStatus();
+      // 主動把當前狀態廣播給觀眾頁
       channel.postMessage({ type: 'state', state });
     }
     if (e.data && e.data.type === 'watch-ping') {
       watchOpened = true;
       updateSyncStatus();
+    }
+    // 觀眾頁完成抽牌
+    if (e.data && e.data.type === 'card-drawn') {
+      receiveCardDrawn(e.data.cardIndex);
     }
   };
 }
@@ -1843,54 +1902,24 @@ if (channel) {
 function updateSyncStatus() {
   const dot = document.getElementById('syncDot');
   const text = document.getElementById('syncText');
-
-  if (fbReady && fbWriteOk) {
-    // Firebase 正常運作
+  if (watchOpened) {
     dot.classList.add('connected');
-    text.textContent = '雲端同步中';
-  } else if (fbReady && !fbWriteOk) {
-    // Firebase 已載入但還沒成功寫入
-    dot.classList.remove('connected');
-    text.textContent = '雲端連線中...';
-  } else if (watchOpened) {
-    // 沒有 Firebase，但本機觀眾頁有連上
-    dot.classList.add('connected');
-    text.textContent = '本機同步中';
+    text.textContent = '觀眾頁已連線';
   } else {
     dot.classList.remove('connected');
-    text.textContent = '未連線';
+    text.textContent = '未連接觀眾頁';
   }
 }
 
-// 每 4 秒重置本機觀眾頁狀態，靠觀眾頁 ping 維持
+// 每 3 秒重置一次「已連線」狀態，靠觀眾頁的 ping 來維持
 setInterval(() => {
   watchOpened = false;
   updateSyncStatus();
 }, 4000);
 
-/* ===== 監聽 Firebase 連線狀態 ===== */
-if (fbReady && fbDB) {
-  fbDB.ref('.info/connected').on('value', (snap) => {
-    if (snap.val() === true) {
-      console.log('[Firebase] 已連上資料庫');
-    } else {
-      fbWriteOk = false;
-      console.warn('[Firebase] 與資料庫斷線');
-    }
-    updateSyncStatus();
-  });
-}
-
 /* ===== 啟動 ===== */
 loadState();
 renderAll();
-
-// 啟動時先把本機狀態推一次到 Firebase（讓觀眾頁有初始資料）
-if (fbReady && fbDB) {
-  saveState();
-}
-updateSyncStatus();
-
 </script>
 
 </body>
