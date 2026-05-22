@@ -7,7 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+  
+  
+  
+  <style>
   :root {
     --bg: #F8F4EA;
     --bg-card: #FFFFFF;
@@ -1150,6 +1156,13 @@ function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (channel) channel.postMessage({ type: 'state', state });
   } catch (e) {}
+    // 寫入 Firebase
+  if (fbReady && fbDB) {
+    fbDB.ref(FIREBASE_GAME_PATH).set({
+      ...state,
+      _updatedAt: Date.now(),
+    }).catch((err) => console.error('[Firebase] 寫入失敗：', err));
+  }
 }
 
 function resetGame() {
