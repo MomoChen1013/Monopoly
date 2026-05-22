@@ -1715,7 +1715,6 @@ function showCardModal(tileIdx, card, kind) {
     html += `<button class="action-btn success" onclick="cardEffect_skipToll()"><span class="ico">🛡</span><div class="desc">確認 — 下次踩到別人的地免付過路費</div></button>`;
   } else if (card.effect === 'next_toll_double') {
     html += `<button class="action-btn fail" onclick="cardEffect_nextTollDouble()"><span class="ico">⚠</span><div class="desc">確認 — 下次踩到別人的地過路費加倍</div></button>`;
-  } else {
   } else if (card.effect === 'teleport_choose') {
     html += `<button class="action-btn" onclick="cardManual_teleport()"><span class="ico">🔀</span><div class="desc">設定 — 選擇傳送格</div></button>`;
   } else if (card.effect === 'free_property') {
