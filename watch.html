@@ -7,7 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+  
+  <style>
   :root {
     --bg: #F8F4EA;
     --bg-card: #FFFFFF;
@@ -1178,9 +1182,24 @@ function getGridPos(idx) {
   return { col: 1, row: 1 };
 }
 
+function normalizeState(s) {
+  if (!s || !s.teams) return s;
+  s.teams.forEach(team => {
+    if (!Array.isArray(team.properties)) team.properties = [];
+    if (typeof team.score !== 'number') team.score = 0;
+    if (typeof team.pos !== 'number') team.pos = 0;
+    if (typeof team.skipNextRent !== 'boolean') team.skipNextRent = false;
+    if (typeof team.nextRentDouble !== 'boolean') team.nextRentDouble = false;
+    if (typeof team.skipTurn !== 'boolean') team.skipTurn = false;
+  });
+  if (typeof s.currentTeamIdx !== 'number') s.currentTeamIdx = 0;
+  if (typeof s.log !== 'string') s.log = '...';
+  return s;
+}
+
 function findOwner(tileIdx) {
   for (const team of state.teams) {
-    if (team.properties.includes(tileIdx)) return team;
+    if (Array.isArray(team.properties) && team.properties.includes(tileIdx)) return team;
   }
   return null;
 }
@@ -1382,7 +1401,15 @@ if (channel) {
 /* ===== 啟動 ===== */
 loadState();
 renderAll();
-
+if (fbReady && fbDB) {
+  fbDB.ref(FIREBASE_GAME_PATH).on('value', (snap) => {
+    const data = snap.val();
+    if (data && data.teams && data.teams.length === 4) {
+      state = normalizeState(data);
+      renderAll();
+    }
+  }, (err) => console.error('[Firebase] 讀取失敗：', err));
+}
 // 同時也監聽 localStorage 變化（同台電腦不同分頁的另一種同步機制）
 window.addEventListener('storage', (e) => {
   if (e.key === STORAGE_KEY && e.newValue) {
