@@ -180,7 +180,11 @@
     border: 2.5px solid var(--ink);
     letter-spacing: 2px;
   }
-
+  .team-crown {
+  margin-left: 8px;
+  font-size: 0.85em;
+  vertical-align: middle;
+  }
   .team-row-piece {
     grid-area: piece;
     width: clamp(36px, 4vw, 56px);
@@ -1274,13 +1278,32 @@ function renderBoard() {
 function renderTeams() {
   const stack = document.getElementById('teamsStack');
   stack.innerHTML = '';
+
+  // 找出目前資產總額（積分＋土地）最高的隊伍
+  let leaderIdx = -1;
+  let leaderAsset = -Infinity;
+  state.teams.forEach((team, idx) => {
+    const asset = calcAsset(team);
+    if (asset > leaderAsset) {
+      leaderAsset = asset;
+      leaderIdx = idx;
+    }
+  });
+
   state.teams.forEach((team, idx) => {
     const row = document.createElement('div');
     row.className = 'team-row' + (idx === state.currentTeamIdx ? ' active' : '');
+
+    // 該隊累積土地積分（所有持有土地的買入價總和）
+    const landPoints = team.properties.reduce((sum, i) => sum + TILES[i].price, 0);
+
+    // 只有最贏的隊伍才顯示皇冠
+    const crown = (idx === leaderIdx) ? '<span class="team-crown">👑</span>' : '';
+
     row.innerHTML = `
       <div class="team-row-piece ${team.color}"></div>
-      <div class="team-row-name">${team.name}</div>
-      <div class="team-row-meta">🏠 ${team.properties.length} 塊地 ／ 📍 ${TILES[team.pos].name}</div>
+      <div class="team-row-name">${team.name}${crown}</div>
+      <div class="team-row-meta">🏠 ${team.properties.length} 塊地（${landPoints} 分）／ 📍 ${TILES[team.pos].name}</div>
       <div>
         <div class="team-row-score-label">SCORE</div>
         <div class="team-row-score">${team.score}</div>
