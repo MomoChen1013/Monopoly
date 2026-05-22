@@ -565,7 +565,7 @@
   /* ===== Log 區（底部）===== */
   .log-section {
     grid-area: log;
-    background: var(--ink);
+    background: var(--c-fate);
     color: var(--bg);
     padding: 16px 24px;
     border: 3px solid var(--ink);
@@ -577,13 +577,13 @@
   }
 
   .log-label {
-    background: var(--c-fate);
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 700;
     font-size: clamp(11px, 1.2vw, 14px);
-    padding: 4px 14px;
-    border: 2.5px solid var(--bg);
+    padding: 4px 4px;
+    border: 2.5px solid var(--ink);
     letter-spacing: 2px;
     text-transform: uppercase;
     flex-shrink: 0;
@@ -1029,7 +1029,6 @@
   </div>
   <!-- Log -->
   <div class="log-section">
-    <span class="log-label">LATEST</span>
     <div class="log-content" id="logContent">等待主持人開始遊戲 ...</div>
   </div>
 
