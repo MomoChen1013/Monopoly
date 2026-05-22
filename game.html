@@ -1793,6 +1793,8 @@ function cardEffect_nextTollDouble() {
 }
 function cardEffect_manualDone() {
   closeModal(); endTurn();
+}
+  
   /* ===== 手動卡：互動式設定面板 ===== */
 
 // 套用變更後同步（不結束回合，主持人自己控制）
@@ -1927,7 +1929,7 @@ function cardManual_forceSellTile(idx) {
   state.log = `🎴 ${team.name} 被迫拍賣「${TILES[idx].name}」，半價回收 ${refund} 分`;
   manualApply();
 }
-}
+
 
 /* ===== Modal 通用 ===== */
 function closeModal() {
