@@ -1103,11 +1103,17 @@ const KIND_LABEL = {
   chance: '#CHANCE', fate: '#FATE', corner: '#CORNER',
 };
 
-function feeFor(price) {
-  if (price <= 100) return 40;
-  if (price <= 140) return 60;
-  if (price <= 180) return 80;
-  return 100;
+function feeFor(price, tileIdx) {
+  let fee;
+  if (price <= 100) fee = 40;
+  else if (price <= 140) fee = 60;
+  else if (price <= 180) fee = 80;
+  else fee = 100;
+  // 「雙倍奉獻」標記過的土地，過路費翻倍
+  if (tileIdx !== undefined && state.doubledTiles && state.doubledTiles.includes(tileIdx)) {
+    fee *= 2;
+  }
+  return fee;
 }
 
 /* ===== 狀態 ===== */
@@ -1469,7 +1475,7 @@ function showTileInfo(idx, isLanding) {
       if (owner.id === team.id) {
         html += `<div class="status-banner">😎 這是 ${team.name} 自己的地，安全通過</div>`;
       } else {
-        const baseFee = feeFor(tile.price);
+        const baseFee = feeFor(tile.price, idx);
         const fee = team.skipNextRent ? 0 : (owner.nextRentDouble ? baseFee * 2 : baseFee);
         const note = team.skipNextRent ? '（有「跳過風險」效果，免付）' : '';
         html += `<div class="status-banner owned">
@@ -1490,7 +1496,7 @@ function showTileInfo(idx, isLanding) {
       </div>
       <div class="price-item">
         <div class="price-label">過路費</div>
-        <div class="price-value">${feeFor(tile.price)}<span class="unit">分</span></div>
+        <div class="price-value">${feeFor(tile.price, idx)}<span class="unit">分</span></div>
       </div>
     </div>
     <div class="rules-block"><div class="rules-label">CHALLENGE</div>${tile.rules}</div>
@@ -1522,7 +1528,7 @@ function showTileInfo(idx, isLanding) {
         </button>
       `;
     } else {
-      const baseFee = feeFor(tile.price);
+      const baseFee = feeFor(tile.price, idx);
       const actualFee = team.skipNextRent ? 0 : (owner.nextRentDouble ? baseFee * 2 : baseFee);
       html += `
         <button class="action-btn pay" onclick="actionPayRent(${idx}, ${actualFee})">
@@ -1587,7 +1593,7 @@ function actionChallengeOwner(idx) {
   const team = state.teams[state.currentTeamIdx];
   const owner = findOwner(idx);
   const tile = TILES[idx];
-  const fee = feeFor(tile.price);
+  const fee = feeFor(tile.price, idx);
   let html = `
     <div class="status-banner">⚔️ 挑戰 ${owner.name} 中！選擇結果：</div>
     <div class="action-buttons">
@@ -1619,7 +1625,7 @@ function resolveChallenge(idx, result) {
     team.properties.push(idx);
     state.log = `🏆 ${team.name} 挑戰勝利！搶下「${tile.name}」`;
   } else {
-    const fee = feeFor(tile.price);
+    const fee = feeFor(tile.price, idx);
     const total = fee + 20;
     team.score -= total;
     owner.score += total;
@@ -1710,9 +1716,20 @@ function showCardModal(tileIdx, card, kind) {
   } else if (card.effect === 'next_toll_double') {
     html += `<button class="action-btn fail" onclick="cardEffect_nextTollDouble()"><span class="ico">⚠</span><div class="desc">確認 — 下次踩到別人的地過路費加倍</div></button>`;
   } else {
+  } else if (card.effect === 'teleport_choose') {
+    html += `<button class="action-btn" onclick="cardManual_teleport()"><span class="ico">🔀</span><div class="desc">設定 — 選擇傳送格</div></button>`;
+  } else if (card.effect === 'free_property') {
+    html += `<button class="action-btn success" onclick="cardManual_freeProperty()"><span class="ico">🏠</span><div class="desc">設定 — 選擇免費土地</div></button>`;
+  } else if (card.effect === 'force_buy') {
+    html += `<button class="action-btn" onclick="cardManual_forceBuy()"><span class="ico">🤝</span><div class="desc">設定 — 強制收購對手土地</div></button>`;
+  } else if (card.effect === 'double_toll') {
+    html += `<button class="action-btn" onclick="cardManual_doubleToll()"><span class="ico">⚠</span><div class="desc">設定 — 選擇翻倍土地</div></button>`;
+  } else if (card.effect === 'force_sell') {
+    html += `<button class="action-btn fail" onclick="cardManual_forceSell()"><span class="ico">🔨</span><div class="desc">設定 — 選擇拍賣土地</div></button>`;
+  } else {
     html += `
       <div class="rules-block"><div class="rules-label">⚠️ MANUAL</div>此卡需要主持人協助執行。完成後請點下方確認結束回合。</div>
-      <button class="action-btn skip" onclick="cardEffect_manualDone()"><span class="ico">✓</span><div class="desc">已執行完畢 — 結束回合</div></button>
+      <button class="action-btn skip" onclick=""><span class="ico">✓</span><div class="desc">已執行完畢 — 結束回合</div></button>
     `;
   }
 
@@ -1777,6 +1794,140 @@ function cardEffect_nextTollDouble() {
 }
 function cardEffect_manualDone() {
   closeModal(); endTurn();
+  /* ===== 手動卡：互動式設定面板 ===== */
+
+// 套用變更後同步（不結束回合，主持人自己控制）
+function manualApply() {
+  saveState();
+  renderAll();
+  closeModal();
+}
+
+// 重新渲染 modal 內容
+function manualPanel(title, innerHtml) {
+  document.getElementById('m-body').innerHTML =
+    `<div class="rules-block"><div class="rules-label">⚙️ 設定</div>${title}</div>
+     <div class="action-buttons">${innerHtml}</div>`;
+}
+
+// 產生「選擇土地」按鈕清單；filterFn(tile, idx) 回傳 true 才列出
+function manualTileButtons(onclickName, filterFn) {
+  let html = '';
+  TILES.forEach((t, idx) => {
+    const isLand = t.kind !== 'corner' && t.kind !== 'chance' && t.kind !== 'fate';
+    if (!isLand || !filterFn(t, idx)) return;
+    const owner = findOwner(idx);
+    html += `<button class="action-btn" onclick="${onclickName}(${idx})">
+      <span class="ico">🏠</span><div class="desc">${t.name} $${t.price}（${owner ? owner.name : '無主'}）</div></button>`;
+  });
+  return html || `<div class="rules-block">目前沒有符合條件的土地。</div>`;
+}
+
+// 產生「選擇隊伍」按鈕清單
+function manualTeamButtons(onclickName, excludeCurrent) {
+  return state.teams.map((t, i) => {
+    if (excludeCurrent && i === state.currentTeamIdx) return '';
+    return `<button class="action-btn" onclick="${onclickName}(${i})">
+      <span class="ico">●</span><div class="desc">${t.name}</div></button>`;
+  }).join('');
+}
+
+/* --- 捷徑：傳送到任意一格 --- */
+function cardManual_teleport() {
+  let html = '';
+  TILES.forEach((t, idx) => {
+    const ico = (t.kind === 'corner' || t.kind === 'chance' || t.kind === 'fate') ? (t.emoji || t.mark || '◆') : '🏠';
+    html += `<button class="action-btn" onclick="cardManual_teleportTo(${idx})">
+      <span class="ico">${ico}</span><div class="desc">${t.name}</div></button>`;
+  });
+  manualPanel('選擇要傳送到的格子（不執行該格挑戰）：', html);
+}
+function cardManual_teleportTo(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  team.pos = idx;
+  state.log = `🎴 ${team.name} 使用「捷徑」傳送到「${TILES[idx].name}」`;
+  manualApply();
+}
+
+/* --- 免費置產：取得一塊無主地 --- */
+function cardManual_freeProperty() {
+  manualPanel(`選擇一塊無主土地，免費登記給 ${state.teams[state.currentTeamIdx].name}：`,
+    manualTileButtons('cardManual_freePropertyTo', (t, idx) => !findOwner(idx)));
+}
+function cardManual_freePropertyTo(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  team.properties.push(idx);
+  state.log = `🎴 ${team.name} 用「免費置產」取得「${TILES[idx].name}」`;
+  manualApply();
+}
+
+/* --- 談判高手：強制買下對手一塊地（買入價）--- */
+function cardManual_forceBuy() {
+  manualPanel('選擇要強制收購的對手：', manualTeamButtons('cardManual_forceBuyTeam', true));
+}
+function cardManual_forceBuyTeam(teamIdx) {
+  const target = state.teams[teamIdx];
+  if (target.properties.length === 0) {
+    manualPanel(`${target.name} 沒有土地可收購。`,
+      `<button class="action-btn skip" onclick="closeModal()"><span class="ico">✓</span><div class="desc">關閉</div></button>`);
+    return;
+  }
+  manualPanel(`選擇要從 ${target.name} 買下的土地（付買入價）：`,
+    manualTileButtons('cardManual_forceBuyTile_' + teamIdx, (t, idx) => target.properties.includes(idx)));
+}
+// 為每隊建立帶賣家編號的處理函式
+state.teams.forEach((_, ti) => {
+  window['cardManual_forceBuyTile_' + ti] = function(tileIdx) {
+    const buyer = state.teams[state.currentTeamIdx];
+    const seller = state.teams[ti];
+    const price = TILES[tileIdx].price;
+    seller.properties = seller.properties.filter(i => i !== tileIdx);
+    buyer.properties.push(tileIdx);
+    buyer.score -= price;
+    seller.score += price;
+    state.log = `🎴 ${buyer.name} 用「談判高手」向 ${seller.name} 買下「${TILES[tileIdx].name}」(${price}分)`;
+    manualApply();
+  };
+});
+
+/* --- 雙倍奉獻：自己一塊地過路費翻倍 --- */
+function cardManual_doubleToll() {
+  const team = state.teams[state.currentTeamIdx];
+  if (team.properties.length === 0) {
+    manualPanel('你目前沒有土地可標記。',
+      `<button class="action-btn skip" onclick="closeModal()"><span class="ico">✓</span><div class="desc">關閉</div></button>`);
+    return;
+  }
+  manualPanel('選擇一塊你的土地，本局過路費翻倍：',
+    manualTileButtons('cardManual_doubleTollOn', (t, idx) => team.properties.includes(idx)));
+}
+function cardManual_doubleTollOn(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  if (!state.doubledTiles) state.doubledTiles = [];
+  if (!state.doubledTiles.includes(idx)) state.doubledTiles.push(idx);
+  state.log = `🎴 ${team.name} 對「${TILES[idx].name}」啟動「雙倍奉獻」`;
+  manualApply();
+}
+
+/* --- 強制拍賣：自己一塊地半價賣回銀行 --- */
+function cardManual_forceSell() {
+  const team = state.teams[state.currentTeamIdx];
+  if (team.properties.length === 0) {
+    manualPanel('你目前沒有土地可拍賣。',
+      `<button class="action-btn skip" onclick="closeModal()"><span class="ico">✓</span><div class="desc">關閉</div></button>`);
+    return;
+  }
+  manualPanel('選擇一塊要半價賣回銀行的土地：',
+    manualTileButtons('cardManual_forceSellTile', (t, idx) => team.properties.includes(idx)));
+}
+function cardManual_forceSellTile(idx) {
+  const team = state.teams[state.currentTeamIdx];
+  const refund = Math.floor(TILES[idx].price / 2);
+  team.properties = team.properties.filter(i => i !== idx);
+  team.score += refund;
+  state.log = `🎴 ${team.name} 被迫拍賣「${TILES[idx].name}」，半價回收 ${refund} 分`;
+  manualApply();
+}
 }
 
 /* ===== Modal 通用 ===== */
