@@ -874,11 +874,11 @@
     </div>
     <div class="info-item accent-2">
       <div class="info-hash">#TIME</div>
-      <div class="info-value">90<span class="unit">分鐘</span></div>
+      <div class="info-value">180<span class="unit">分鐘</span></div>
     </div>
     <div class="info-item accent-3">
       <div class="info-hash">#STARTING</div>
-      <div class="info-value">900<span class="unit">分</span></div>
+      <div class="info-value">500+<span class="unit">分</span></div>
     </div>
     <div class="info-item accent-4">
       <div class="info-hash">#GOAL</div>
@@ -933,9 +933,9 @@
           二選一：<strong>付過路費</strong>給地主，或<strong>發起挑戰</strong>。挑戰勝利可用原買入價搶下地產；挑戰失敗則付過路費＋額外罰款 20 分。
           <span class="note">※ 發起挑戰時，若該格原本是「全組依序輪流」的單向題型（如5人輪流答題），要改為「來回」進行：5+4=9 次連續挑戰，中間任一次失敗即整體失敗。</span>
           <div class="fee-table">
-            <div class="fee-row"><span>地價 80–100</span><span class="price">過路費 40</span></div>
-            <div class="fee-row"><span>地價 120–140</span><span class="price">過路費 60</span></div>
-            <div class="fee-row"><span>地價 160–180</span><span class="price">過路費 80</span></div>
+            <div class="fee-row"><span>地價 80–100</span><span class="price">過路費 40-50</span></div>
+            <div class="fee-row"><span>地價 120–140</span><span class="price">過路費 60-70</span></div>
+            <div class="fee-row"><span>地價 160–180</span><span class="price">過路費 80-90</span></div>
             <div class="fee-row"><span>地價 200</span><span class="price">過路費 100</span></div>
           </div>
         </div>
@@ -963,7 +963,7 @@
       </button>
       <div class="acc-body">
         <div class="acc-content">
-          <strong>總資產 ＝ 手上剩餘積分 ＋ 所有地產買入價</strong>。遊戲結束時最高者獲勝！
+          <strong>總資產 ＝ 手上剩餘積分 ＋ 所有地產</strong>。遊戲結束時最高者獲勝！
         </div>
       </div>
     </div>
@@ -979,7 +979,7 @@
   <div class="legend">
     <span class="legend-chip"><span class="legend-blob" style="background: var(--c-fitness)"></span>體能</span>
     <span class="legend-chip"><span class="legend-blob" style="background: var(--c-knowledge)"></span>生活常識</span>
-    <span class="legend-chip"><span class="legend-blob" style="background: var(--c-bible)"></span>聖經知識</span>
+    <span class="legend-chip"><span class="legend-blob" style="background: var(--c-bible)"></span>聖經</span>
     <span class="legend-chip"><span class="legend-blob" style="background: var(--c-friend)"></span>熟識度</span>
     <span class="legend-chip"><span class="legend-blob" style="background: var(--c-team)"></span>團隊合作</span>
     <span class="legend-chip"><span class="legend-blob" style="background: var(--c-chance)"></span>機會</span>
@@ -989,13 +989,6 @@
 
   <div class="board" id="board">
     <div class="board-center">
-      <div class="center-dice" aria-hidden="true">
-        <span class="dice-dot d1"></span>
-        <span class="dice-dot d2"></span>
-        <span class="dice-dot d3"></span>
-        <span class="dice-dot d4"></span>
-        <span class="dice-dot d5"></span>
-      </div>
       <div class="center-verse">
         <span class="verse-mark">VERSE</span>
         <div class="verse-text">「應當一無掛慮，<br>只要凡事藉著禱告、祈求和感謝，<br>將你們所要的告訴神。」</div>
@@ -1038,7 +1031,7 @@
 const TILES = [
   { kind: 'corner', sub: 'start', emoji: '🚀', name: '出發', desc: '經過：得 100 積分\n踩到：得 150 積分' },
   { kind: 'fitness',   code: 'B1', name: '高角帽搬家', price: 140, emoji: '🎩', tag: 'FITNESS',
-    rules: '全員戴上生日尖角帽，視線會變成很小的範圍。\n在這狀態下，全組要把指定物體搬運／放置到指定位置。\n⛔ 搬運途中不能用手扶帽子、不能掀帽子。\n🏅️ 限時90秒，搬運完成即挑戰成功。' },
+    rules: '全員戴上生日高角帽，視線會變成很小的範圍。\n在這狀態下，全組要把指定物體搬運／放置到指定位置。\n⛔ 搬運途中不能用手扶帽子、不能掀帽子。\n🏅️ 限時90秒，搬運完成即挑戰成功。' },
   { kind: 'knowledge', code: 'K1', name: '注音造詞', price: 100, emoji: '🔤', tag: 'KNOWLEDGE',
     rules: '隨機抽出兩個注音符號（聲母／母音皆可）\n輪流作答：1 → 2 → 3→ 4→ 5\n每人3秒\n違規如：偷告訴隊員，要重新抽注音符號。\n🏅️ 全組要在時限內一次成功且不重複地說出可以使用這兩個注音的字或詞。\n⛔ 重複或是無法在時間內答出者，全組失敗。' },
   { kind: 'chance', code: 'CH1', name: '機會', mark: '?', tag: 'CHANCE',
@@ -1050,7 +1043,7 @@ const TILES = [
   { kind: 'team',      code: 'T1', name: '小隊默契', price: 140, emoji: '✋', tag: 'TEAM',
     rules: '全組集體聽口令，主持人喊出一個指定動作或圖形（如「愛心」、「比讚」、「OK」），\n🏅️全組要在 3 秒內同時比出一樣的姿勢。所有人一致才算成功。30秒內答對3題即可過關\n⛔ 超過30秒無答對3題' },
   { kind: 'corner', sub: 'portal-a', emoji: '🔀', name: '傳送 A', desc: '直接傳送到傳送點 B\n並執行 B 旁邊的下一格效果' },
-  { kind: 'knowledge', code: 'K2', name: '蘋果半邊唸字卡', price: 120, emoji: '🍎', tag: 'KNOWLEDGE',
+  { kind: 'knowledge', code: 'K2', name: '蔬菜水果', price: 120, emoji: '🍎', tag: 'KNOWLEDGE',
     rules: '依順序翻開題字卡，按圖示指定的「位置」唸出該字。輪流作答：1 → 2 → 3→ 4→ 5\n例：圖片是「右半邊的蘋果」→ 唸「果」；左半邊 → 唸「蘋」。\n違規如：偷告訴隊員，要換順序重來。\n\n🏅️ 全組要在時限內輪流說出每個人的圖片。\n⛔ 中途唸錯或停頓過久即失敗。' },
   { kind: 'fitness',   code: 'B2', name: '口令舞蹈', price: 160, emoji: '💃', tag: 'FITNESS',
     rules: '全組接受主持人連續下達的「口令＋動作」指令（例：右手舉、左腳跨、轉一圈）\n\n🏅️ 連續成功完成三次完整指令組合\n⛔ 中間有人做錯或不同步即重新計算。' },
@@ -1108,9 +1101,12 @@ const KIND_LABEL = {
 };
 
 function feeFor(price) {
-  if (price <= 100) return 40;
-  if (price <= 140) return 60;
-  if (price <= 180) return 80;
+  if (price <= 80) return 40;
+  if (price <= 100) return 50;
+  if (price <= 120) return 60;
+  if (price <= 140) return 70;
+  if (price <= 160) return 80;
+  if (price <= 180) return 90;
   return 100;
 }
 
