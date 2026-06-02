@@ -1109,9 +1109,12 @@ const KIND_LABEL = {
 
 function feeFor(price, tileIdx) {
   let fee;
-  if (price <= 100) fee = 40;
-  else if (price <= 140) fee = 60;
-  else if (price <= 180) fee = 80;
+  if (price <= 80) fee = 40;
+  else if (price <= 100) fee = 50;
+  else if (price <= 120) fee = 60;
+  else if (price <= 140) fee = 70;
+  else if (price <= 160) fee = 80;
+  else if (price <= 180) fee = 90;
   else fee = 100;
   // 「雙倍奉獻」標記過的土地，過路費翻倍
   if (tileIdx !== undefined && state.doubledTiles && state.doubledTiles.includes(tileIdx)) {
