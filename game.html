@@ -1145,10 +1145,18 @@ let watchCheckTimer = null;
 /* 等待觀眾頁抽牌時，暫存抽牌資訊 */
 let pendingCardDraw = null; // { kind, tileIdx }
 
-/* 廣播事件給觀眾頁（不影響 state） */
+/* 廣播事件給觀眾頁（不影響 state）
+   同時用 BroadcastChannel（同瀏覽器最快）與 Firebase（跨裝置／手機可達）發送，
+   每筆事件帶上唯一 id，觀眾頁據此去重。 */
 function broadcast(msg) {
+  if (!msg || !msg.type) return;
+  const evt = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ...msg };
   if (channel) {
-    try { channel.postMessage(msg); } catch (e) {}
+    try { channel.postMessage(evt); } catch (e) {}
+  }
+  // state 已透過 FIREBASE_GAME_PATH 同步，不需要再走事件路徑
+  if (fbReady && fbDB && msg.type !== 'state') {
+    fbDB.ref(FIREBASE_EVENT_PATH).set(evt).catch(() => {});
   }
 }
 
@@ -2052,23 +2060,50 @@ function showRanking() {
 }
 
 /* ===== 觀眾頁連線狀態 ===== */
+let lastWatchSeenAt = 0;
+function markWatchOnline() {
+  lastWatchSeenAt = Date.now();
+  if (!watchOpened) {
+    watchOpened = true;
+    updateSyncStatus();
+  }
+}
+
 if (channel) {
   channel.onmessage = (e) => {
     if (e.data && e.data.type === 'watch-hello') {
-      watchOpened = true;
-      updateSyncStatus();
+      markWatchOnline();
       // 主動把當前狀態廣播給觀眾頁
       channel.postMessage({ type: 'state', state });
     }
     if (e.data && e.data.type === 'watch-ping') {
-      watchOpened = true;
-      updateSyncStatus();
+      markWatchOnline();
     }
     // 觀眾頁完成抽牌
     if (e.data && e.data.type === 'card-drawn') {
       receiveCardDrawn(e.data.cardIndex);
     }
   };
+}
+
+/* 透過 Firebase 監聽觀眾頁心跳（手機跨裝置時 BroadcastChannel 不會通）
+   只要 watchHeartbeat 節點有更新就視為觀眾頁在線；不比較時間戳，
+   避免主持人與觀眾裝置時鐘偏差造成誤判。離線靠下方 1 秒一次的計時判斷。 */
+let lastDrawId = null;
+if (fbReady && fbDB) {
+  fbDB.ref(FIREBASE_WATCH_PATH).on('value', (snap) => {
+    if (snap.val()) markWatchOnline();
+  });
+
+  // 觀眾頁抽牌完成 → Firebase
+  fbDB.ref(FIREBASE_DRAW_PATH).on('value', (snap) => {
+    const data = snap.val();
+    if (!data || !data.id || data.id === lastDrawId) return;
+    lastDrawId = data.id;
+    if (typeof data.cardIndex === 'number') {
+      receiveCardDrawn(data.cardIndex);
+    }
+  });
 }
 
 function updateSyncStatus() {
@@ -2083,11 +2118,14 @@ function updateSyncStatus() {
   }
 }
 
-// 每 3 秒重置一次「已連線」狀態，靠觀眾頁的 ping 來維持
+// 每秒檢查心跳新鮮度；6 秒沒收到心跳就視為離線
 setInterval(() => {
-  watchOpened = false;
-  updateSyncStatus();
-}, 4000);
+  const online = (Date.now() - lastWatchSeenAt) < 6000;
+  if (online !== watchOpened) {
+    watchOpened = online;
+    updateSyncStatus();
+  }
+}, 1000);
 
 /* ===== 啟動 ===== */
 loadState();

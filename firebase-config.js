@@ -14,7 +14,13 @@ const firebaseConfig = {
 };
 
 /* 單一場次：所有資料存在這個固定路徑底下 */
-const FIREBASE_GAME_PATH = "game/current";
+const FIREBASE_GAME_PATH  = "game/current";
+/* 跨裝置事件匯流：主持人 → 觀眾頁推送的事件（彈窗、抽牌請求…） */
+const FIREBASE_EVENT_PATH = "game/lastEvent";
+/* 觀眾頁 → 主持人：抽牌結果 */
+const FIREBASE_DRAW_PATH  = "game/lastDraw";
+/* 觀眾頁存活心跳，主持人據此判斷觀眾頁是否在線 */
+const FIREBASE_WATCH_PATH = "game/watchHeartbeat";
 
 /* 初始化（使用 CDN 載入的 compat 版 firebase 全域變數） */
 let fbDB = null;
