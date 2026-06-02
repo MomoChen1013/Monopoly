@@ -1371,40 +1371,42 @@ function pingHost() {
   }
 }
 
-/* ===== 監聽主持人頁 ===== */
+/* ===== 監聽主持人頁 =====
+   來源有二：同瀏覽器 BroadcastChannel、跨裝置 Firebase 事件路徑。
+   兩者都呼叫 dispatchEvent()，用 id 去重避免重複觸發。 */
+const seenEventIds = new Set();
+function dispatchEvent(ev) {
+  if (!ev || !ev.type) return;
+  if (ev.id) {
+    if (seenEventIds.has(ev.id)) return;
+    seenEventIds.add(ev.id);
+    if (seenEventIds.size > 200) {
+      // 保留最後 100 個，避免無限長
+      const arr = Array.from(seenEventIds).slice(-100);
+      seenEventIds.clear();
+      arr.forEach(id => seenEventIds.add(id));
+    }
+  }
+
+  if (ev.type === 'state' && ev.state) {
+    state = ev.state;
+    renderAll();
+    setConnected(true);
+    if (connectionTimer) clearTimeout(connectionTimer);
+    connectionTimer = setTimeout(() => setConnected(false), 8000);
+  } else if (ev.type === 'show-rule') {
+    openTileModal(ev.tileIdx, { live: true });
+  } else if (ev.type === 'card-draw-prompt') {
+    openCardDraw(ev.kind, ev.tileIdx);
+  } else if (ev.type === 'card-result') {
+    showCardResult(ev.kind, ev.card, ev.teamName);
+  } else if (ev.type === 'close-modal') {
+    closeModal();
+  }
+}
+
 if (channel) {
-  channel.onmessage = (e) => {
-    if (!e.data) return;
-
-    if (e.data.type === 'state' && e.data.state) {
-      state = e.data.state;
-      renderAll();
-      setConnected(true);
-      // 重置斷線計時
-      if (connectionTimer) clearTimeout(connectionTimer);
-      connectionTimer = setTimeout(() => setConnected(false), 8000);
-    }
-
-    // 主持人踩到一般地產 → 自動跳出規則
-    if (e.data.type === 'show-rule') {
-      openTileModal(e.data.tileIdx, { live: true });
-    }
-
-    // 主持人踩到機會／命運格 → 顯示可點擊的抽牌畫面
-    if (e.data.type === 'card-draw-prompt') {
-      openCardDraw(e.data.kind, e.data.tileIdx);
-    }
-
-    // 主持人端顯示了卡片結果 → 觀眾頁同步顯示牌面
-    if (e.data.type === 'card-result') {
-      showCardResult(e.data.kind, e.data.card, e.data.teamName);
-    }
-
-    // 主持人結束 / 關閉視窗 → 觀眾頁一併關閉
-    if (e.data.type === 'close-modal') {
-      closeModal();
-    }
-  };
+  channel.onmessage = (e) => { if (e.data) dispatchEvent(e.data); };
 
   // 一開始打招呼
   channel.postMessage({ type: 'watch-hello' });
@@ -1412,6 +1414,29 @@ if (channel) {
 
   // 8 秒沒收到狀態就判斷為離線
   connectionTimer = setTimeout(() => setConnected(false), 8000);
+}
+
+/* Firebase 事件監聽：跨裝置時這是唯一管道。
+   為避免觀眾頁開啟當下被「過期事件」轟炸，bootstrap 時跳過第一筆。 */
+let firebaseEventBootstrapped = false;
+if (fbReady && fbDB) {
+  fbDB.ref(FIREBASE_EVENT_PATH).on('value', (snap) => {
+    const ev = snap.val();
+    if (!ev) return;
+    if (!firebaseEventBootstrapped) {
+      firebaseEventBootstrapped = true;
+      if (ev.id) seenEventIds.add(ev.id);
+      return;
+    }
+    dispatchEvent(ev);
+  });
+
+  // 心跳：每 2 秒告訴主持人「我還在線」
+  const writeHeartbeat = () => {
+    fbDB.ref(FIREBASE_WATCH_PATH).set({ ts: Date.now() }).catch(() => {});
+  };
+  writeHeartbeat();
+  setInterval(writeHeartbeat, 2000);
 }
 
 /* ===== 啟動 ===== */
@@ -1423,6 +1448,9 @@ if (fbReady && fbDB) {
     if (data && data.teams && data.teams.length === 4) {
       state = normalizeState(data);
       renderAll();
+      setConnected(true);
+      if (connectionTimer) clearTimeout(connectionTimer);
+      connectionTimer = setTimeout(() => setConnected(false), 12000);
     }
   }, (err) => console.error('[Firebase] 讀取失敗：', err));
 }
@@ -1575,11 +1603,17 @@ function doFlip() {
   const count = CARD_COUNT[drawState.kind] || 6;
   const cardIndex = Math.floor(Math.random() * count);
 
-  // 通知主持人頁抽到的卡片
+  // 通知主持人頁抽到的卡片（同瀏覽器走 BroadcastChannel，跨裝置走 Firebase）
   if (channel) {
     try {
       channel.postMessage({ type: 'card-drawn', cardIndex: cardIndex });
     } catch (e) {}
+  }
+  if (fbReady && fbDB) {
+    fbDB.ref(FIREBASE_DRAW_PATH).set({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      cardIndex: cardIndex,
+    }).catch(() => {});
   }
 
   // 牌面文字會由主持人回傳的 card-result 補上；先翻面
