@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebase-config.js?v=20260602b"></script>
   
   
   
@@ -1156,7 +1156,7 @@ function broadcast(msg) {
   }
   // state 已透過 FIREBASE_GAME_PATH 同步，不需要再走事件路徑
   if (fbReady && fbDB && msg.type !== 'state') {
-    fbDB.ref(FIREBASE_EVENT_PATH).set(evt).catch(() => {});
+    fbDB.ref('game/lastEvent').set(evt).catch(() => {});
   }
 }
 
@@ -2091,12 +2091,12 @@ if (channel) {
    避免主持人與觀眾裝置時鐘偏差造成誤判。離線靠下方 1 秒一次的計時判斷。 */
 let lastDrawId = null;
 if (fbReady && fbDB) {
-  fbDB.ref(FIREBASE_WATCH_PATH).on('value', (snap) => {
+  fbDB.ref('game/watchHeartbeat').on('value', (snap) => {
     if (snap.val()) markWatchOnline();
   });
 
   // 觀眾頁抽牌完成 → Firebase
-  fbDB.ref(FIREBASE_DRAW_PATH).on('value', (snap) => {
+  fbDB.ref('game/lastDraw').on('value', (snap) => {
     const data = snap.val();
     if (!data || !data.id || data.id === lastDrawId) return;
     lastDrawId = data.id;

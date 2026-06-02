@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Archivo+Black&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebase-config.js?v=20260602b"></script>
   
   <style>
   :root {
@@ -1470,7 +1470,7 @@ if (fbReady && fbDB) {
     updateDebugBadge();
   });
 
-  fbDB.ref(FIREBASE_EVENT_PATH).on('value', (snap) => {
+  fbDB.ref('game/lastEvent').on('value', (snap) => {
     const ev = snap.val();
     if (!ev) return;
     if (!firebaseEventBootstrapped) {
@@ -1489,7 +1489,7 @@ if (fbReady && fbDB) {
   const writeHeartbeat = () => {
     debugInfo.hbCount++;
     updateDebugBadge();
-    fbDB.ref(FIREBASE_WATCH_PATH).set({ ts: Date.now() }).catch((err) => {
+    fbDB.ref('game/watchHeartbeat').set({ ts: Date.now() }).catch((err) => {
       debugInfo.fb = 'hb-err:' + (err && err.code ? err.code : 'unknown');
       updateDebugBadge();
       console.error('[Firebase] 心跳寫入失敗：', err);
@@ -1673,7 +1673,7 @@ function doFlip() {
     } catch (e) {}
   }
   if (fbReady && fbDB) {
-    fbDB.ref(FIREBASE_DRAW_PATH).set({
+    fbDB.ref('game/lastDraw').set({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       cardIndex: cardIndex,
     }).catch(() => {});
