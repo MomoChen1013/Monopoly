@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>📺 觀眾頁 ｜ 人生大富翁</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -990,6 +993,24 @@
     0%   { transform: scale(0.6); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
   }
+
+  /* Debug 狀態列：固定在右上，永遠可見，用來偵測 iOS Safari 連線狀況 */
+  .debug-badge {
+    position: fixed;
+    top: 6px;
+    right: 6px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.78);
+    color: #fff;
+    font-family: 'Space Grotesk', monospace, sans-serif;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.4;
+    pointer-events: none;
+    max-width: 90vw;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
@@ -1038,6 +1059,9 @@
 
 
 </div>
+
+<!-- Debug 狀態列：iOS Safari 連線排查用 -->
+<div class="debug-badge" id="debugBadge">🔥 init ｜ 📡 - ｜ 💓 0 ｜ 收 0</div>
 
 <!-- 大型 toast -->
 <div class="big-toast" id="bigToast">🎉 經過出發！</div>
@@ -1362,8 +1386,20 @@ function showBigToast(text) {
 /* ===== 連線狀態 ===== */
 function setConnected(yes) {
   connected = yes;
-  document.getElementById('offlineBanner').classList.toggle('show', !yes);
+  const banner = document.getElementById('offlineBanner');
+  if (banner) banner.classList.toggle('show', !yes);
+  updateDebugBadge();
 }
+
+/* ===== Debug 狀態列（顯示 Firebase 連線、最近事件、心跳）===== */
+const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0 };
+function updateDebugBadge() {
+  const el = document.getElementById('debugBadge');
+  if (!el) return;
+  const ago = debugInfo.lastEventAt ? Math.floor((Date.now() - debugInfo.lastEventAt) / 1000) + 's' : '-';
+  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ 收 ${debugInfo.eventCount}`;
+}
+setInterval(updateDebugBadge, 1000);
 
 function pingHost() {
   if (channel) {
@@ -1388,6 +1424,10 @@ function dispatchEvent(ev) {
     }
   }
 
+  debugInfo.eventCount++;
+  debugInfo.lastEvent = ev.type;
+  debugInfo.lastEventAt = Date.now();
+
   if (ev.type === 'state' && ev.state) {
     state = ev.state;
     renderAll();
@@ -1403,6 +1443,7 @@ function dispatchEvent(ev) {
   } else if (ev.type === 'close-modal') {
     closeModal();
   }
+  updateDebugBadge();
 }
 
 if (channel) {
@@ -1420,6 +1461,15 @@ if (channel) {
    為避免觀眾頁開啟當下被「過期事件」轟炸，bootstrap 時跳過第一筆。 */
 let firebaseEventBootstrapped = false;
 if (fbReady && fbDB) {
+  debugInfo.fb = 'init...';
+  updateDebugBadge();
+
+  // 真實連線狀態
+  fbDB.ref('.info/connected').on('value', (snap) => {
+    debugInfo.fb = snap.val() ? 'connected' : 'offline';
+    updateDebugBadge();
+  });
+
   fbDB.ref(FIREBASE_EVENT_PATH).on('value', (snap) => {
     const ev = snap.val();
     if (!ev) return;
@@ -1429,14 +1479,27 @@ if (fbReady && fbDB) {
       return;
     }
     dispatchEvent(ev);
+  }, (err) => {
+    debugInfo.fb = 'event-err:' + (err && err.code ? err.code : 'unknown');
+    updateDebugBadge();
+    console.error('[Firebase] 事件讀取失敗：', err);
   });
 
   // 心跳：每 2 秒告訴主持人「我還在線」
   const writeHeartbeat = () => {
-    fbDB.ref(FIREBASE_WATCH_PATH).set({ ts: Date.now() }).catch(() => {});
+    debugInfo.hbCount++;
+    updateDebugBadge();
+    fbDB.ref(FIREBASE_WATCH_PATH).set({ ts: Date.now() }).catch((err) => {
+      debugInfo.fb = 'hb-err:' + (err && err.code ? err.code : 'unknown');
+      updateDebugBadge();
+      console.error('[Firebase] 心跳寫入失敗：', err);
+    });
   };
   writeHeartbeat();
   setInterval(writeHeartbeat, 2000);
+} else {
+  debugInfo.fb = 'sdk-missing';
+  updateDebugBadge();
 }
 
 /* ===== 啟動 ===== */

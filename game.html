@@ -2086,14 +2086,13 @@ if (channel) {
   };
 }
 
-/* 透過 Firebase 監聽觀眾頁心跳（手機跨裝置時 BroadcastChannel 不會通） */
+/* 透過 Firebase 監聽觀眾頁心跳（手機跨裝置時 BroadcastChannel 不會通）
+   只要 watchHeartbeat 節點有更新就視為觀眾頁在線；不比較時間戳，
+   避免主持人與觀眾裝置時鐘偏差造成誤判。離線靠下方 1 秒一次的計時判斷。 */
 let lastDrawId = null;
 if (fbReady && fbDB) {
   fbDB.ref(FIREBASE_WATCH_PATH).on('value', (snap) => {
-    const hb = snap.val();
-    if (hb && hb.ts && Date.now() - hb.ts < 6000) {
-      markWatchOnline();
-    }
+    if (snap.val()) markWatchOnline();
   });
 
   // 觀眾頁抽牌完成 → Firebase
