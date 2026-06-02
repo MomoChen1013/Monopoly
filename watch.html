@@ -1119,9 +1119,12 @@ const KIND_LABEL = {
 };
 
 function feeFor(price) {
-  if (price <= 100) return 40;
-  if (price <= 140) return 60;
-  if (price <= 180) return 80;
+  if (price <= 80) return 40;
+  if (price <= 100) return 50;
+  if (price <= 120) return 60;
+  if (price <= 140) return 70;
+  if (price <= 160) return 80;
+  if (price <= 180) return 90;
   return 100;
 }
 
