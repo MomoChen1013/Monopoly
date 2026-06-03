@@ -1392,12 +1392,14 @@ function setConnected(yes) {
 }
 
 /* ===== Debug 狀態列（顯示 Firebase 連線、最近事件、心跳）===== */
-const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0 };
+const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0, rawFire: 0, lastRawType: '-' };
 function updateDebugBadge() {
   const el = document.getElementById('debugBadge');
   if (!el) return;
   const ago = debugInfo.lastEventAt ? Math.floor((Date.now() - debugInfo.lastEventAt) / 1000) + 's' : '-';
-  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ 收 ${debugInfo.eventCount}`;
+  // raw = Firebase 事件路徑被觸發次數（包含 bootstrap 與被去重的）
+  // 收 = 實際被 dispatch 處理的次數
+  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount}`;
 }
 setInterval(updateDebugBadge, 1000);
 
@@ -1472,11 +1474,17 @@ if (fbReady && fbDB) {
 
   fbDB.ref('game/lastEvent').on('value', (snap) => {
     const ev = snap.val();
+    debugInfo.rawFire++;
+    debugInfo.lastRawType = ev ? (ev.type || 'no-type') : 'null';
+    updateDebugBadge();
     if (!ev) return;
+    // 只跳過「超過 30 秒之前」的歷史事件，避免合法事件被誤殺
     if (!firebaseEventBootstrapped) {
       firebaseEventBootstrapped = true;
-      if (ev.id) seenEventIds.add(ev.id);
-      return;
+      if (ev.ts && Date.now() - ev.ts > 30000) {
+        if (ev.id) seenEventIds.add(ev.id);
+        return;
+      }
     }
     dispatchEvent(ev);
   }, (err) => {
