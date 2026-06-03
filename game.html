@@ -1147,16 +1147,29 @@ let pendingCardDraw = null; // { kind, tileIdx }
 
 /* 廣播事件給觀眾頁（不影響 state）
    同時用 BroadcastChannel（同瀏覽器最快）與 Firebase（跨裝置／手機可達）發送，
-   每筆事件帶上唯一 id，觀眾頁據此去重。 */
+   每筆事件帶上唯一 id 與時間戳，觀眾頁據此去重與判斷新鮮度。 */
+let lastBroadcastInfo = '-';
 function broadcast(msg) {
   if (!msg || !msg.type) return;
-  const evt = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), ...msg };
+  const evt = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    ts: Date.now(),
+    ...msg,
+  };
   if (channel) {
     try { channel.postMessage(evt); } catch (e) {}
   }
-  // state 已透過 FIREBASE_GAME_PATH 同步，不需要再走事件路徑
+  // state 已透過 game/current 同步，不需要再走事件路徑
   if (fbReady && fbDB && msg.type !== 'state') {
-    fbDB.ref('game/lastEvent').set(evt).catch(() => {});
+    fbDB.ref('game/lastEvent').set(evt)
+      .then(() => { lastBroadcastInfo = '✓ ' + msg.type; updateSyncStatus(); })
+      .catch((err) => {
+        lastBroadcastInfo = '✗ ' + msg.type + ' ' + ((err && err.code) || 'err');
+        updateSyncStatus();
+        console.error('[Firebase] 事件廣播失敗：', msg.type, err);
+      });
+  } else if (!fbReady || !fbDB) {
+    lastBroadcastInfo = '⚠ Firebase 未就緒';
   }
 }
 
@@ -2111,10 +2124,10 @@ function updateSyncStatus() {
   const text = document.getElementById('syncText');
   if (watchOpened) {
     dot.classList.add('connected');
-    text.textContent = '觀眾頁已連線';
+    text.textContent = '觀眾頁已連線｜' + lastBroadcastInfo;
   } else {
     dot.classList.remove('connected');
-    text.textContent = '未連接觀眾頁';
+    text.textContent = '未連接觀眾頁｜' + lastBroadcastInfo;
   }
 }
 
