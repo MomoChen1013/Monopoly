@@ -994,6 +994,38 @@
     100% { transform: scale(1); opacity: 1; }
   }
 
+  /* 抽卡按鈕：card-draw-prompt 事件到達時顯示，使用者點擊才開 modal
+     用使用者主動 tap 取代自動 open，避開 iOS WebKit 對 program 化開 modal 的 quirk */
+  .draw-action-btn {
+    display: none;
+    margin-top: 14px;
+    width: 100%;
+    padding: 18px 12px;
+    background: var(--c-fate);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: 6px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 5px 5px 0 var(--ink);
+    animation: pulseDraw 1.4s ease-in-out infinite;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .draw-action-btn.show { display: block; }
+  .draw-action-btn.chance { background: var(--c-chance); }
+  .draw-action-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 2px 2px 0 var(--ink);
+    animation: none;
+  }
+  @keyframes pulseDraw {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); box-shadow: 6px 6px 0 var(--ink); }
+  }
+
   /* Debug 狀態列：固定在右上，永遠可見，用來偵測 iOS Safari 連線狀況 */
   .debug-badge {
     position: fixed;
@@ -1055,6 +1087,7 @@
   <!-- Log -->
   <div class="log-section">
     <div class="log-content" id="logContent">等待主持人開始遊戲 ...</div>
+    <button class="draw-action-btn" id="drawActionBtn" onclick="onDrawActionClick()">🎴 點我抽卡</button>
   </div>
 
 
@@ -1444,10 +1477,14 @@ function dispatchEvent(ev) {
   } else if (ev.type === 'show-rule') {
     openTileModal(ev.tileIdx, { live: true });
   } else if (ev.type === 'card-draw-prompt') {
-    openCardDraw(ev.kind, ev.tileIdx);
+    // 不再自動 open modal — 改顯示「抽卡」按鈕，等使用者主動點擊
+    showDrawActionButton(ev.kind, ev.tileIdx);
   } else if (ev.type === 'card-result') {
+    // 結果到了：按鈕用不到了；如果使用者根本沒點按鈕，這裡也會直接顯示結果牌
+    hideDrawActionButton();
     showCardResult(ev.kind, ev.card, ev.teamName);
   } else if (ev.type === 'close-modal') {
+    hideDrawActionButton();
     closeModal();
   }
   updateDebugBadge();
@@ -1483,10 +1520,11 @@ if (fbReady && fbDB) {
     debugInfo.lastRawType = ev ? (ev.type || 'no-type') : 'null';
     updateDebugBadge();
     if (!ev) return;
-    // 只跳過「超過 30 秒之前」的歷史事件，避免合法事件被誤殺
     if (!firebaseEventBootstrapped) {
       firebaseEventBootstrapped = true;
-      if (ev.ts && Date.now() - ev.ts > 30000) {
+      // card-draw-prompt 代表「待辦狀態」（按鈕應該存在），不論幾秒前都要重播
+      // 其他事件只跳過「超過 30 秒之前」的歷史事件
+      if (ev.type !== 'card-draw-prompt' && ev.ts && Date.now() - ev.ts > 30000) {
         if (ev.id) seenEventIds.add(ev.id);
         return;
       }
@@ -1522,8 +1560,9 @@ if (fbReady && fbDB) {
       debugInfo.fb = 'connected';
       updateDebugBadge();
       if (!ev) return;
-      // 回前景時，60 秒內的事件視為新鮮（dedup 會擋掉重複處理過的）
-      if (ev.ts && Date.now() - ev.ts < 60000) {
+      // card-draw-prompt 不論多久前都要補上按鈕；其他事件 60 秒內視為新鮮
+      // dedup 會擋掉已處理過的同 id 事件
+      if (ev.type === 'card-draw-prompt' || (ev.ts && Date.now() - ev.ts < 60000)) {
         dispatchEvent(ev);
       }
     }).catch((err) => {
@@ -1651,6 +1690,32 @@ const CARD_COUNT = { chance: 6, fate: 6 };
 let drawState = null; // { kind, tileIdx, done }
 
 /* 主持人踩到機會／命運格 → 顯示可點擊翻牌 */
+/* ===== 抽卡按鈕（card-draw-prompt 到達時顯示，由觀眾主動點擊開 modal）===== */
+let pendingDrawAction = null; // { kind, tileIdx }
+
+function showDrawActionButton(kind, tileIdx) {
+  pendingDrawAction = { kind: kind, tileIdx: tileIdx };
+  const btn = document.getElementById('drawActionBtn');
+  if (!btn) return;
+  btn.textContent = kind === 'chance' ? '🎴 點我抽 機會 牌' : '🎴 點我抽 命運 牌';
+  btn.classList.remove('chance', 'fate');
+  btn.classList.add(kind);
+  btn.classList.add('show');
+}
+
+function hideDrawActionButton() {
+  pendingDrawAction = null;
+  const btn = document.getElementById('drawActionBtn');
+  if (btn) btn.classList.remove('show');
+}
+
+function onDrawActionClick() {
+  if (!pendingDrawAction) return;
+  const { kind, tileIdx } = pendingDrawAction;
+  hideDrawActionButton();
+  openCardDraw(kind, tileIdx);
+}
+
 function openCardDraw(kind, tileIdx) {
   debugInfo.lastDrawCall = kind;
   debugInfo.lastDrawAt = Date.now();
