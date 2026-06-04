@@ -1397,9 +1397,10 @@ function updateDebugBadge() {
   const el = document.getElementById('debugBadge');
   if (!el) return;
   const ago = debugInfo.lastEventAt ? Math.floor((Date.now() - debugInfo.lastEventAt) / 1000) + 's' : '-';
-  // raw = Firebase 事件路徑被觸發次數（包含 bootstrap 與被去重的）
-  // 收 = 實際被 dispatch 處理的次數
-  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount}`;
+  const modal = document.getElementById('modal');
+  const modalState = modal && modal.classList.contains('show') ? 'M✓' : 'M✗';
+  const vis = document.hidden ? 'BG' : 'FG';
+  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount} ｜ ${modalState} ${vis}`;
 }
 setInterval(updateDebugBadge, 1000);
 
@@ -1505,6 +1506,29 @@ if (fbReady && fbDB) {
   };
   writeHeartbeat();
   setInterval(writeHeartbeat, 2000);
+
+  // iOS Safari 把 tab 背景化時，Firebase websocket 可能變殭屍狀態：
+  // UI 顯示 connected 但實際收不到新資料。回到前景時主動重抓最新事件。
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    debugInfo.fb = 'resync';
+    updateDebugBadge();
+    fbDB.ref('game/lastEvent').once('value').then((snap) => {
+      const ev = snap.val();
+      debugInfo.fb = 'connected';
+      updateDebugBadge();
+      if (!ev) return;
+      // 回前景時，60 秒內的事件視為新鮮（dedup 會擋掉重複處理過的）
+      if (ev.ts && Date.now() - ev.ts < 60000) {
+        dispatchEvent(ev);
+      }
+    }).catch((err) => {
+      debugInfo.fb = 'resync-err:' + ((err && err.code) || 'unknown');
+      updateDebugBadge();
+    });
+    // 也立刻發一次心跳，讓主持人立刻知道我回來了
+    writeHeartbeat();
+  });
 } else {
   debugInfo.fb = 'sdk-missing';
   updateDebugBadge();
