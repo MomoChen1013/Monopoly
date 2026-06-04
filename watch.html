@@ -1240,7 +1240,7 @@ function findOwner(tileIdx) {
 
 function calcAsset(team) {
   let total = team.score;
-  team.properties.forEach(idx => total += TILES[idx].price);
+  team.properties.forEach(idx => total += TILES[idx].price * 1.2);
   return total;
 }
 
