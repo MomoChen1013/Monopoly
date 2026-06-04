@@ -1624,7 +1624,7 @@ function actionChallengeOwner(idx) {
       </button>
       <button class="action-btn fail" onclick="resolveChallenge(${idx}, 'lose')">
         <span class="ico">😭</span>
-        <div class="desc">挑戰者 (${team.name}) 敗<br><small>付過路費 ${fee} + 罰款 20 給 ${owner.name}</small></div>
+        <div class="desc">挑戰者 (${team.name}) 敗<br><small>付過路費 ${fee} 給 ${owner.name}</small></div>
       </button>
       <button class="action-btn skip" onclick="actionPayRent(${idx}, ${fee})">
         <span class="ico">←</span>
@@ -1647,10 +1647,9 @@ function resolveChallenge(idx, result) {
     state.log = `🏆 ${team.name} 挑戰勝利！搶下「${tile.name}」`;
   } else {
     const fee = feeFor(tile.price, idx);
-    const total = fee + 20;
-    team.score -= total;
-    owner.score += total;
-    state.log = `😭 ${team.name} 挑戰失敗，付 ${total} 給 ${owner.name}（過路費 ${fee} + 罰款 20）`;
+    team.score -= fee;
+    owner.score += fee;
+    state.log = `😭 ${team.name} 挑戰失敗，付過路費 ${fee} 給 ${owner.name}`;
   }
   closeModal();
   endTurn();
