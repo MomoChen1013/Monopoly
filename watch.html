@@ -1007,7 +1007,7 @@
     border-radius: 6px;
     font-family: 'Noto Sans TC', sans-serif;
     font-weight: 900;
-    font-size: 22px;
+    font-size: 16px;
     letter-spacing: 2px;
     cursor: pointer;
     box-shadow: 5px 5px 0 var(--ink);
@@ -1026,23 +1026,6 @@
     50% { transform: scale(1.04); box-shadow: 6px 6px 0 var(--ink); }
   }
 
-  /* Debug 狀態列：固定在右上，永遠可見，用來偵測 iOS Safari 連線狀況 */
-  .debug-badge {
-    position: fixed;
-    top: 6px;
-    right: 6px;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.78);
-    color: #fff;
-    font-family: 'Space Grotesk', monospace, sans-serif;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    line-height: 1.4;
-    pointer-events: none;
-    max-width: 90vw;
-    word-break: break-all;
-  }
 </style>
 </head>
 <body>
@@ -1087,14 +1070,11 @@
   <!-- Log -->
   <div class="log-section">
     <div class="log-content" id="logContent">等待主持人開始遊戲 ...</div>
-    <button class="draw-action-btn" id="drawActionBtn" onclick="onDrawActionClick()">🎴 點我抽卡</button>
+    <button class="draw-action-btn" id="drawActionBtn" onclick="onDrawActionClick()">抽牌</button>
   </div>
 
 
 </div>
-
-<!-- Debug 狀態列：iOS Safari 連線排查用 -->
-<div class="debug-badge" id="debugBadge">🔥 init ｜ 📡 - ｜ 💓 0 ｜ 收 0</div>
 
 <!-- 大型 toast -->
 <div class="big-toast" id="bigToast">🎉 經過出發！</div>
@@ -1421,25 +1401,7 @@ function setConnected(yes) {
   connected = yes;
   const banner = document.getElementById('offlineBanner');
   if (banner) banner.classList.toggle('show', !yes);
-  updateDebugBadge();
 }
-
-/* ===== Debug 狀態列（顯示 Firebase 連線、最近事件、心跳）===== */
-const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0, rawFire: 0, lastRawType: '-', lastDrawCall: '-', lastDrawAt: 0, drawErr: '' };
-function updateDebugBadge() {
-  const el = document.getElementById('debugBadge');
-  if (!el) return;
-  const ago = debugInfo.lastEventAt ? Math.floor((Date.now() - debugInfo.lastEventAt) / 1000) + 's' : '-';
-  const drawAgo = debugInfo.lastDrawAt ? Math.floor((Date.now() - debugInfo.lastDrawAt) / 1000) + 's' : '-';
-  const modal = document.getElementById('modal');
-  const modalState = modal && modal.classList.contains('show') ? 'M✓' : 'M✗';
-  const vis = document.hidden ? 'BG' : 'FG';
-  const drawLine = debugInfo.drawErr
-    ? ` ｜ ⚠draw:${debugInfo.drawErr}`
-    : debugInfo.lastDrawAt ? ` ｜ draw:${debugInfo.lastDrawCall}(${drawAgo})` : '';
-  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount} ｜ ${modalState} ${vis}${drawLine}`;
-}
-setInterval(updateDebugBadge, 1000);
 
 function pingHost() {
   if (channel) {
@@ -1464,10 +1426,6 @@ function dispatchEvent(ev) {
     }
   }
 
-  debugInfo.eventCount++;
-  debugInfo.lastEvent = ev.type;
-  debugInfo.lastEventAt = Date.now();
-
   if (ev.type === 'state' && ev.state) {
     state = ev.state;
     renderAll();
@@ -1487,7 +1445,6 @@ function dispatchEvent(ev) {
     hideDrawActionButton();
     closeModal();
   }
-  updateDebugBadge();
 }
 
 if (channel) {
@@ -1505,20 +1462,8 @@ if (channel) {
    為避免觀眾頁開啟當下被「過期事件」轟炸，bootstrap 時跳過第一筆。 */
 let firebaseEventBootstrapped = false;
 if (fbReady && fbDB) {
-  debugInfo.fb = 'init...';
-  updateDebugBadge();
-
-  // 真實連線狀態
-  fbDB.ref('.info/connected').on('value', (snap) => {
-    debugInfo.fb = snap.val() ? 'connected' : 'offline';
-    updateDebugBadge();
-  });
-
   fbDB.ref('game/lastEvent').on('value', (snap) => {
     const ev = snap.val();
-    debugInfo.rawFire++;
-    debugInfo.lastRawType = ev ? (ev.type || 'no-type') : 'null';
-    updateDebugBadge();
     if (!ev) return;
     if (!firebaseEventBootstrapped) {
       firebaseEventBootstrapped = true;
@@ -1530,19 +1475,11 @@ if (fbReady && fbDB) {
       }
     }
     dispatchEvent(ev);
-  }, (err) => {
-    debugInfo.fb = 'event-err:' + (err && err.code ? err.code : 'unknown');
-    updateDebugBadge();
-    console.error('[Firebase] 事件讀取失敗：', err);
-  });
+  }, (err) => console.error('[Firebase] 事件讀取失敗：', err));
 
   // 心跳：每 2 秒告訴主持人「我還在線」
   const writeHeartbeat = () => {
-    debugInfo.hbCount++;
-    updateDebugBadge();
     fbDB.ref('game/watchHeartbeat').set({ ts: Date.now() }).catch((err) => {
-      debugInfo.fb = 'hb-err:' + (err && err.code ? err.code : 'unknown');
-      updateDebugBadge();
       console.error('[Firebase] 心跳寫入失敗：', err);
     });
   };
@@ -1553,28 +1490,18 @@ if (fbReady && fbDB) {
   // UI 顯示 connected 但實際收不到新資料。回到前景時主動重抓最新事件。
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
-    debugInfo.fb = 'resync';
-    updateDebugBadge();
     fbDB.ref('game/lastEvent').once('value').then((snap) => {
       const ev = snap.val();
-      debugInfo.fb = 'connected';
-      updateDebugBadge();
       if (!ev) return;
       // card-draw-prompt 不論多久前都要補上按鈕；其他事件 60 秒內視為新鮮
       // dedup 會擋掉已處理過的同 id 事件
       if (ev.type === 'card-draw-prompt' || (ev.ts && Date.now() - ev.ts < 60000)) {
         dispatchEvent(ev);
       }
-    }).catch((err) => {
-      debugInfo.fb = 'resync-err:' + ((err && err.code) || 'unknown');
-      updateDebugBadge();
-    });
+    }).catch((err) => console.error('[Firebase] 回前景重抓失敗：', err));
     // 也立刻發一次心跳，讓主持人立刻知道我回來了
     writeHeartbeat();
   });
-} else {
-  debugInfo.fb = 'sdk-missing';
-  updateDebugBadge();
 }
 
 /* ===== 啟動 ===== */
@@ -1697,7 +1624,7 @@ function showDrawActionButton(kind, tileIdx) {
   pendingDrawAction = { kind: kind, tileIdx: tileIdx };
   const btn = document.getElementById('drawActionBtn');
   if (!btn) return;
-  btn.textContent = kind === 'chance' ? '🎴 點我抽 機會 牌' : '🎴 點我抽 命運 牌';
+  btn.textContent = '抽牌';
   btn.classList.remove('chance', 'fate');
   btn.classList.add(kind);
   btn.classList.add('show');
@@ -1717,9 +1644,6 @@ function onDrawActionClick() {
 }
 
 function openCardDraw(kind, tileIdx) {
-  debugInfo.lastDrawCall = kind;
-  debugInfo.lastDrawAt = Date.now();
-  debugInfo.drawErr = '';
   try {
     drawState = { kind: kind, tileIdx: tileIdx, done: false };
 
@@ -1772,10 +1696,8 @@ function openCardDraw(kind, tileIdx) {
     modal.classList.add('show');
     modal.classList.add('auto-pop');
   } catch (e) {
-    debugInfo.drawErr = (e && e.message ? e.message : 'err').slice(0, 40);
     console.error('[openCardDraw] 失敗：', e);
   }
-  updateDebugBadge();
 }
 
 /* 觀眾點擊翻牌 */
