@@ -1392,15 +1392,19 @@ function setConnected(yes) {
 }
 
 /* ===== Debug 狀態列（顯示 Firebase 連線、最近事件、心跳）===== */
-const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0, rawFire: 0, lastRawType: '-' };
+const debugInfo = { fb: 'init', lastEvent: '-', lastEventAt: 0, hbCount: 0, eventCount: 0, rawFire: 0, lastRawType: '-', lastDrawCall: '-', lastDrawAt: 0, drawErr: '' };
 function updateDebugBadge() {
   const el = document.getElementById('debugBadge');
   if (!el) return;
   const ago = debugInfo.lastEventAt ? Math.floor((Date.now() - debugInfo.lastEventAt) / 1000) + 's' : '-';
+  const drawAgo = debugInfo.lastDrawAt ? Math.floor((Date.now() - debugInfo.lastDrawAt) / 1000) + 's' : '-';
   const modal = document.getElementById('modal');
   const modalState = modal && modal.classList.contains('show') ? 'M✓' : 'M✗';
   const vis = document.hidden ? 'BG' : 'FG';
-  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount} ｜ ${modalState} ${vis}`;
+  const drawLine = debugInfo.drawErr
+    ? ` ｜ ⚠draw:${debugInfo.drawErr}`
+    : debugInfo.lastDrawAt ? ` ｜ draw:${debugInfo.lastDrawCall}(${drawAgo})` : '';
+  el.innerHTML = `🔥 ${debugInfo.fb} ｜ 📡 ${debugInfo.lastEvent}/${debugInfo.lastRawType} (${ago}) ｜ 💓 ${debugInfo.hbCount} ｜ raw ${debugInfo.rawFire} 收 ${debugInfo.eventCount} ｜ ${modalState} ${vis}${drawLine}`;
 }
 setInterval(updateDebugBadge, 1000);
 
@@ -1648,46 +1652,65 @@ let drawState = null; // { kind, tileIdx, done }
 
 /* 主持人踩到機會／命運格 → 顯示可點擊翻牌 */
 function openCardDraw(kind, tileIdx) {
-  drawState = { kind: kind, tileIdx: tileIdx, done: false };
+  debugInfo.lastDrawCall = kind;
+  debugInfo.lastDrawAt = Date.now();
+  debugInfo.drawErr = '';
+  try {
+    drawState = { kind: kind, tileIdx: tileIdx, done: false };
 
-  const modal = document.getElementById('modal');
-  modal.querySelector('#modalContent').scrollTop = 0;
+    const modal = document.getElementById('modal');
+    if (!modal) throw new Error('no-modal-el');
+    const mc = modal.querySelector('#modalContent');
+    if (mc) mc.scrollTop = 0;
 
-  document.getElementById('m-tag').textContent = kind === 'chance' ? '#CHANCE' : '#FATE';
-  document.getElementById('m-name').textContent = kind === 'chance' ? '機會' : '命運';
-  document.getElementById('m-code').textContent = kind === 'chance' ? 'CHANCE CARD' : 'FATE CARD';
+    const mTag = document.getElementById('m-tag');
+    const mName = document.getElementById('m-name');
+    const mCode = document.getElementById('m-code');
+    if (mTag)  mTag.textContent  = kind === 'chance' ? '#CHANCE' : '#FATE';
+    if (mName) mName.textContent = kind === 'chance' ? '機會' : '命運';
+    if (mCode) mCode.textContent = kind === 'chance' ? 'CHANCE CARD' : 'FATE CARD';
 
-  const mark = kind === 'chance' ? '?' : '!';
-  const cnTag = kind === 'chance' ? '機會' : '命運';
+    const mark = kind === 'chance' ? '?' : '!';
+    const cnTag = kind === 'chance' ? '機會' : '命運';
 
-  const html = `
-    <div class="draw-stage">
-      <div class="draw-headline">${kind === 'chance' ? '✨ 抽機會牌' : '🌀 抽命運牌'}</div>
-      <div class="draw-hint" id="drawHint">由現場觀眾點一下卡牌，翻開命運！</div>
+    const html = `
+      <div class="draw-stage">
+        <div class="draw-headline">${kind === 'chance' ? '✨ 抽機會牌' : '🌀 抽命運牌'}</div>
+        <div class="draw-hint" id="drawHint">由現場觀眾點一下卡牌，翻開命運！</div>
 
-      <div class="flip-card idle" id="flipCard" onclick="doFlip()">
-        <div class="flip-card-inner">
-          <div class="flip-face flip-back ${kind}">
-            <div class="flip-back-mark">${mark}</div>
-            <div class="flip-back-label">${kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
-            <div class="flip-back-tap">👆 點我抽牌</div>
-          </div>
-          <div class="flip-face flip-front ${kind}" id="flipFront">
-            <div class="flip-front-tag">${cnTag}</div>
-            <div class="flip-front-name" id="flipName">？</div>
-            <div class="flip-front-desc" id="flipDesc"></div>
+        <div class="flip-card idle" id="flipCard" onclick="doFlip()">
+          <div class="flip-card-inner">
+            <div class="flip-face flip-back ${kind}">
+              <div class="flip-back-mark">${mark}</div>
+              <div class="flip-back-label">${kind === 'chance' ? 'CHANCE' : 'FATE'}</div>
+              <div class="flip-back-tap">👆 點我抽牌</div>
+            </div>
+            <div class="flip-face flip-front ${kind}" id="flipFront">
+              <div class="flip-front-tag">${cnTag}</div>
+              <div class="flip-front-name" id="flipName">？</div>
+              <div class="flip-front-desc" id="flipDesc"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="draw-result-note" id="drawNote">
-        抽牌完成！請看主持人執行卡片效果。
+        <div class="draw-result-note" id="drawNote">
+          抽牌完成！請看主持人執行卡片效果。
+        </div>
       </div>
-    </div>
-  `;
-  document.getElementById('m-body').innerHTML = html;
-  modal.classList.add('show');
-  modal.classList.add('auto-pop');
+    `;
+    const mBody = document.getElementById('m-body');
+    if (!mBody) throw new Error('no-m-body');
+    mBody.innerHTML = html;
+
+    // 強制 reflow 避免 iOS WebKit 在同一 frame 改 innerHTML + classList 時不更新
+    void modal.offsetHeight;
+    modal.classList.add('show');
+    modal.classList.add('auto-pop');
+  } catch (e) {
+    debugInfo.drawErr = (e && e.message ? e.message : 'err').slice(0, 40);
+    console.error('[openCardDraw] 失敗：', e);
+  }
+  updateDebugBadge();
 }
 
 /* 觀眾點擊翻牌 */
